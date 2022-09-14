@@ -1,0 +1,2 @@
+export SECRET_KEY=dhbashvjdhjsa
+export ENV_REF=development
