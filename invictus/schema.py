@@ -1,9 +1,9 @@
 import graphene
+import ogame.schema
 
 
 
-
-class Query(graphene.ObjectType):
+class Query(ogame.schema.Query, graphene.ObjectType):
     pass
 
 
