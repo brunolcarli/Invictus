@@ -26,7 +26,7 @@ class OgameStatsCrawler:
         return data
 
     @staticmethod
-    def update_player_data(data, player_id, highscores):
+    def update_player_data(data, player_id, highscores, status):
         player, _ = Player.objects.get_or_create(
             player_id=int(player_id),
             server_id=data['serverId']
@@ -34,6 +34,7 @@ class OgameStatsCrawler:
 
         player.name = data['name']
         print(f'Updating player: {player.player_id}:{player.name}')
+        player.status = status
         player.planets = CompressedDict(data['planets']).bit_string
         player.save()
 
@@ -102,10 +103,10 @@ class OgameStatsCrawler:
         while True:
             universe = OgameStatsCrawler.get_universe_data()
             highscores = OgameStatsCrawler.get_highscore_data()
-            for player_id, player_name in universe.players[['id', 'name']].values:
+            for player_id, player_name, status in universe.players[['id', 'name', 'status']].values:
                 try:
                     data = universe.get_player_data(player_name)
-                    OgameStatsCrawler.update_player_data(data['playerData'], player_id, highscores)
+                    OgameStatsCrawler.update_player_data(data['playerData'], player_id, highscores, status)
                 except:
                     continue
             sleep(3600*2)

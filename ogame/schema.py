@@ -44,6 +44,7 @@ class PlayerType(graphene.ObjectType):
     player_id = graphene.Int()
     server_id = graphene.String()
     name = graphene.String()
+    status = graphene.String()
     planets = DynamicScalar()
     scores = graphene.List(ScoreType)
 

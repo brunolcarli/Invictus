@@ -6,6 +6,7 @@ class Player(models.Model):
     name = models.CharField(max_length=100)
     server_id = models.CharField(max_length=10)
     planets = models.BinaryField()
+    status = models.CharField(max_length=4, null=True)
 
 
 class Score(models.Model):
