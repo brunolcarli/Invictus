@@ -61,6 +61,9 @@ class Query(graphene.ObjectType):
         name__icontains=graphene.String(
             description='Filter by player full or partial name.'
         ),
+        status=graphene.String(
+            description='Filter by player status.'
+        ),
         player_id=graphene.Int(
             description='Filter by player ingame ID.'
         ),
