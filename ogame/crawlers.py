@@ -62,37 +62,37 @@ class OgameStatsCrawler:
             return
 
         score.total = CompressedDict({
-            'score': float(total[0]),
-            'rank': int(total[1])}
+            'score': float(total[1]),
+            'rank': int(total[0])}
         ).bit_string
         score.economy = CompressedDict({
-            'score': float(economy[0]),
-            'rank': int(economy[1])}
+            'score': float(economy[1]),
+            'rank': int(economy[0])}
         ).bit_string
         score.research = CompressedDict({
-            'score': float(research[0]),
-            'rank': int(research[1])}
+            'score': float(research[1]),
+            'rank': int(research[0])}
         ).bit_string
         score.military = CompressedDict({
-            'score': float(military[0]),
-            'rank': int(military[1]),
+            'score': float(military[1]),
+            'rank': int(military[0]),
             'ships': int(military[2])
         }).bit_string
         score.military_built = CompressedDict({
-            'score': float(military_built[0]),
-            'rank': int(military_built[1])}
+            'score': float(military_built[1]),
+            'rank': int(military_built[0])}
         ).bit_string
         score.military_destroyed = CompressedDict({
-            'score': float(military_destroyed[0]),
-            'rank': int(military_destroyed[1])}
+            'score': float(military_destroyed[1]),
+            'rank': int(military_destroyed[0])}
         ).bit_string
         score.military_lost = CompressedDict({
-            'score': float(military_lost[0]),
-            'rank': int(military_lost[1])}
+            'score': float(military_lost[1]),
+            'rank': int(military_lost[0])}
         ).bit_string
         score.honor = CompressedDict({
-            'score': float(honor[0]),
-            'rank': int(honor[1])}
+            'score': float(honor[1]),
+            'rank': int(honor[0])}
         ).bit_string
         score.datetime = dt_reference
         score.save()
