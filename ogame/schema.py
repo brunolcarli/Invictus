@@ -1,6 +1,6 @@
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
-from ogame.models import Player
+from ogame.models import Player, Alliance
 
 
 class ScoreType(graphene.ObjectType):
@@ -47,12 +47,28 @@ class PlayerType(graphene.ObjectType):
     status = graphene.String()
     planets = DynamicScalar()
     scores = graphene.List(ScoreType)
+    alliance = graphene.Field('ogame.schema.AllianceType')
+    alliances_founded = graphene.List('ogame.schema.AllianceType')
+
+    def resolve_alliances_founded(self, info, **kwargs):
+        return Alliance.objects.filter(founder__player_id=self.player_id)
 
     def resolve_planets(self, info, **kwargs):
         return CompressedDict.decompress_bytes(self.planets)
 
     def resolve_scores(self, info, **kwargs):
         return self.score_set.all()
+
+
+class AllianceType(graphene.ObjectType):
+    ally_id = graphene.Int()
+    name = graphene.String()
+    tag = graphene.String()
+    founder = graphene.Field(PlayerType)
+    found_date = graphene.DateTime()
+    logo = graphene.String()
+    homepage = graphene.String()
+    application_open = graphene.Boolean()
 
 
 class Query(graphene.ObjectType):
@@ -77,3 +93,12 @@ class Query(graphene.ObjectType):
 
     def resolve_players(self, info, **kwargs):
         return Player.objects.filter(**kwargs)
+
+    alliances = graphene.List(
+        AllianceType,
+        name__icontains=graphene.String(),
+        ally_id=graphene.Int()
+    )
+
+    def resolve_alliances(self, info, **kwargs):
+        return Alliance.objects.filter(**kwargs)
