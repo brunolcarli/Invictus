@@ -9,3 +9,4 @@ django-graphql-jwt==0.2.1
 PyJWT==1.7.0
 django-cors-headers==3.0.2
 ogame-stats==0.3.6
+pandas==1.4.4

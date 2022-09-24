@@ -1,6 +1,20 @@
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance
+from ogame.util import get_diff_df
+
+
+class ScoreDiffType(graphene.ObjectType):
+    datetime = graphene.DateTime()
+    total = graphene.Float()
+    economy = graphene.Float()
+    research = graphene.Float()
+    military = graphene.Float()
+    ships = graphene.Float()
+    military_built = graphene.Float()
+    military_destroyed = graphene.Float()
+    military_lost = graphene.Float()
+    honor = graphene.Float()
 
 
 class ScoreType(graphene.ObjectType):
@@ -49,6 +63,7 @@ class PlayerType(graphene.ObjectType):
     scores = graphene.List(ScoreType)
     alliance = graphene.Field('ogame.schema.AllianceType')
     alliances_founded = graphene.List('ogame.schema.AllianceType')
+    score_diff = graphene.List(ScoreDiffType)
 
     def resolve_alliances_founded(self, info, **kwargs):
         return Alliance.objects.filter(founder__player_id=self.player_id)
@@ -58,6 +73,10 @@ class PlayerType(graphene.ObjectType):
 
     def resolve_scores(self, info, **kwargs):
         return self.score_set.all()
+
+    def resolve_score_diff(self, info, **kwargs):
+        dataframe = get_diff_df(self.score_set.all())
+        return [ScoreDiffType(*row) for row in dataframe.values[1:]]
 
 
 class AllianceType(graphene.ObjectType):
