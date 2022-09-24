@@ -40,4 +40,15 @@ def get_diff_df(player_scores):
     df['military_destroyed'] = df.military_destroyed.diff()
     df['military_lost'] = df.military_lost.diff()
     df['honor'] = df.honor.diff()
+
+    df['total'].loc[df['total'] < 0] = 0
+    df['economy'].loc[df['economy'] < 0] = 0
+    df['research'].loc[df['research'] < 0] = 0
+    df['military'].loc[df['military'] < 0] = 0
+    df['ships'].loc[df['ships'] < 0] = 0
+    df['military_built'].loc[df['military_built'] < 0] = 0
+    df['military_destroyed'].loc[df['military_destroyed'] < 0] = 0
+    df['military_lost'].loc[df['military_lost'] < 0] = 0
+    df['honor'].loc[df['honor'] < 0] = 0
+
     return df
