@@ -4,6 +4,11 @@ from ogame.models import Player, Alliance
 from ogame.util import get_diff_df
 
 
+class HourMeanActivity(graphene.ObjectType):
+    hours = graphene.List(graphene.String)
+    average_progress = graphene.List(graphene.Float)
+
+
 class WeekdayMeanActivity(graphene.ObjectType):
     weekdays = graphene.List(graphene.String)
     average_progress = graphene.List(graphene.Float)
@@ -70,12 +75,28 @@ class PlayerType(graphene.ObjectType):
     alliances_founded = graphene.List('ogame.schema.AllianceType')
     score_diff = graphene.List(ScoreDiffType)
     weekday_mean_activity = graphene.Field(WeekdayMeanActivity)
+    hour_mean_activity = graphene.Field(HourMeanActivity)
+    halfhour_mean_activity = graphene.Field(HourMeanActivity)
+
+    def resolve_halfhour_mean_activity(self, info, **kwargs):
+        dataframe = get_diff_df(self.score_set.all())
+        dataframe = dataframe.set_index(dataframe.datetime)
+        dataframe['halfhour'] = dataframe.index.round(freq='1800S').strftime('%H:'+'%M')
+        dataframe = dataframe[['total', 'halfhour']].groupby('halfhour').mean().fillna(0)
+        return HourMeanActivity(*[dataframe.index.values, dataframe.total.values])
+    
+    def resolve_hour_mean_activity(self, info, **kwargs):
+        dataframe = get_diff_df(self.score_set.all())
+        dataframe = dataframe.set_index(dataframe.datetime)
+        dataframe['hour'] = dataframe.index.round(freq='3600S').strftime('%H:'+'%M')
+        dataframe = dataframe[['total', 'hour']].groupby('hour').mean().fillna(0)
+        return HourMeanActivity(*[dataframe.index.values, dataframe.total.values])
 
     def resolve_weekday_mean_activity(self, info, **kwargs):
         dataframe = get_diff_df(self.score_set.all())
         dataframe = dataframe.set_index(dataframe.datetime)
         dataframe['weekday'] = dataframe.index.strftime('%A')
-        dataframe = dataframe[['total', 'weekday']].groupby('weekday').mean()
+        dataframe = dataframe[['total', 'weekday']].groupby('weekday').mean().fillna(0)
         return WeekdayMeanActivity(*[dataframe.index.values, dataframe.total.values])
 
     def resolve_alliances_founded(self, info, **kwargs):
