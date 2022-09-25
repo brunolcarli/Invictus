@@ -4,6 +4,11 @@ from ogame.models import Player, Alliance
 from ogame.util import get_diff_df
 
 
+class WeekdayMeanActivity(graphene.ObjectType):
+    weekdays = graphene.List(graphene.String)
+    average_progress = graphene.List(graphene.Float)
+
+
 class ScoreDiffType(graphene.ObjectType):
     datetime = graphene.DateTime()
     total = graphene.Float()
@@ -64,6 +69,14 @@ class PlayerType(graphene.ObjectType):
     alliance = graphene.Field('ogame.schema.AllianceType')
     alliances_founded = graphene.List('ogame.schema.AllianceType')
     score_diff = graphene.List(ScoreDiffType)
+    weekday_mean_activity = graphene.Field(WeekdayMeanActivity)
+
+    def resolve_weekday_mean_activity(self, info, **kwargs):
+        dataframe = get_diff_df(self.score_set.all())
+        dataframe = dataframe.set_index(dataframe.datetime)
+        dataframe['weekday'] = dataframe.index.strftime('%A')
+        dataframe = dataframe[['total', 'weekday']].groupby('weekday').mean()
+        return WeekdayMeanActivity(*[dataframe.index.values, dataframe.total.values])
 
     def resolve_alliances_founded(self, info, **kwargs):
         return Alliance.objects.filter(founder__player_id=self.player_id)
