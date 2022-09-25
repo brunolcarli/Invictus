@@ -54,14 +54,14 @@ class OgameStatsCrawler:
         print(f'Updating score for player: {player.player_id}:{player.name}')
         player_id = str(player_id)
         try:
-            total = highscores.total[['position', 'score']].loc[highscores.total.id == player_id].values[0]
-            economy = highscores.economy[['position', 'score']].loc[highscores.economy.id == player_id].values[0]
-            research = highscores.research[['position', 'score']].loc[highscores.research.id == player_id].values[0]
-            military = highscores.military[['position', 'score', 'ships']].loc[highscores.military.id == player_id].values[0]
-            military_built = highscores.military_built[['position', 'score']].loc[highscores.military_built.id == player_id].values[0]
-            military_destroyed = highscores.military_destroyed[['position', 'score']].loc[highscores.military_destroyed.id == player_id].values[0]
-            military_lost = highscores.military_lost[['position', 'score']].loc[highscores.military_lost.id == player_id].values[0]
-            honor = highscores.honor[['position', 'score']].loc[highscores.honor.id == player_id].values[0]
+            total = highscores.total[['position', 'score']].loc[highscores.total.id == player_id].fillna(0).values[0]
+            economy = highscores.economy[['position', 'score']].loc[highscores.economy.id == player_id].fillna(0).values[0]
+            research = highscores.research[['position', 'score']].loc[highscores.research.id == player_id].fillna(0).values[0]
+            military = highscores.military[['position', 'score', 'ships']].loc[highscores.military.id == player_id].fillna(0).values[0]
+            military_built = highscores.military_built[['position', 'score']].loc[highscores.military_built.id == player_id].fillna(0).values[0]
+            military_destroyed = highscores.military_destroyed[['position', 'score']].loc[highscores.military_destroyed.id == player_id].fillna(0).values[0]
+            military_lost = highscores.military_lost[['position', 'score']].loc[highscores.military_lost.id == player_id].fillna(0).values[0]
+            honor = highscores.honor[['position', 'score']].loc[highscores.honor.id == player_id].fillna(0).values[0]
         except IndexError:
             print(f'Failed retrieving {player.name} score')
             return
@@ -127,13 +127,13 @@ class OgameStatsCrawler:
         else:
             founder = player
 
-        is_open = None if not str(is_open.isdigit()) else bool(int(is_open))
+        is_open = None if not str(is_open).isdigit() else bool(int(is_open))
 
         ally.name = name
         ally.tag = tag
         ally.founder = founder
         ally.found_date = datetime.fromtimestamp(int(found_date))
-        ally.application_open = bool(int(is_open))
+        ally.application_open = is_open
         ally.logo = logo
         ally.homepage = homepage
         ally.save()
@@ -158,7 +158,7 @@ class OgameStatsCrawler:
                         status,
                         alliances
                     )
-                except:
-                    print(f'Crawling Error: Failed updating player {player_name}')
+                except Exception as err:
+                    print(f'Crawling Error: Failed updating player {player_name} with error: {str(err)}')
                     continue
             sleep(3600*2)
