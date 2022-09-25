@@ -6,6 +6,9 @@
 ## Back-End API
 
 *Ogame data tracker*
+
+[![Run on Repl.it](https://replit.com/badge/github/brunolcarli/Invictus)](https://invictus.brunolcarli.repl.co/graphql/?query=query%7B%0A%20%20__schema%7B%0A%20%20%20%20types%20%7B%0A%20%20%20%20%20%20name%0A%20%20%20%20%20%20fields%20%7B%0A%20%20%20%20%20%20%20%20name%0A%20%20%20%20%20%20%20%20type%7Bkind%20ofType%20%7B%0A%20%20%20%20%20%20%20%20%20%20name%0A%20%20%20%20%20%20%20%20%7D%7D%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%7D)
+
 </td></tr></table>
 
 
