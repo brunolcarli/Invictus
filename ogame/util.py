@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 from ogame.types import CompressedDict
 
@@ -52,3 +53,31 @@ def get_diff_df(player_scores):
     df['honor'].loc[df['honor'] < 0] = 0
 
     return df
+
+
+def get_prediction_df(player_scores):
+    data = []
+    for score in player_scores:
+        try:
+            dt = score.datetime
+            total = CompressedDict.decompress_bytes(score.total)['score']
+            data.append([dt, total])
+        except:
+            continue
+
+    df = pd.DataFrame(data, columns=['datetime', 'total'])
+    if not data:
+        return df
+
+    offset = 10  # constant hours to forecast
+    generation_freq = str(3600*offset)+'S'  # interval of future datetimes generation
+
+    df['datetime'] = pd.to_datetime(df['datetime'])
+    df = df.set_index('datetime')
+    df['date'] = df.index.round(freq=generation_freq)
+    df = df[['total', 'date']].groupby('date').mean().fillna(0)
+
+    future_dates = pd.date_range(datetime.now(), periods=15, freq=generation_freq)
+    future_dates = pd.DataFrame(index=pd.to_datetime(future_dates, format='%Y-%m-%d'))
+
+    return df, future_dates

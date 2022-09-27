@@ -10,3 +10,4 @@ PyJWT==1.7.0
 django-cors-headers==3.0.2
 ogame-stats==0.3.6
 pandas==1.4.4
+statsmodels==0.13.2

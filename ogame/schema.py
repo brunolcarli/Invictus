@@ -1,7 +1,15 @@
+from datetime import timedelta, datetime
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance
-from ogame.util import get_diff_df
+from ogame.util import get_diff_df, get_prediction_df
+from ogame.forecast import predict_player_future_score
+
+
+class ScorePrediction(graphene.ObjectType):
+    sample = graphene.List(graphene.String)
+    dates = graphene.List(graphene.String)
+    score_predictions = graphene.List(graphene.Float)
 
 
 class HourMeanActivity(graphene.ObjectType):
@@ -77,6 +85,14 @@ class PlayerType(graphene.ObjectType):
     weekday_mean_activity = graphene.Field(WeekdayMeanActivity)
     hour_mean_activity = graphene.Field(HourMeanActivity)
     halfhour_mean_activity = graphene.Field(HourMeanActivity)
+    score_prediction = graphene.Field(ScorePrediction)
+
+    def resolve_score_prediction(self, info, **kwargs):
+        past_datetime_limit = datetime.now() - timedelta(days=15)
+        scores = self.score_set.filter(datetime__gte=past_datetime_limit)
+        df, future_dates = get_prediction_df(scores)
+        prediction = predict_player_future_score(df, future_dates)
+        return ScorePrediction(*[df.index.values, prediction.index.values, prediction.values])
 
     def resolve_halfhour_mean_activity(self, info, **kwargs):
         dataframe = get_diff_df(self.score_set.all())
