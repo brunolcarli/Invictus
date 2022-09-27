@@ -7,8 +7,9 @@ from ogame.forecast import predict_player_future_score
 
 
 class ScorePrediction(graphene.ObjectType):
-    sample = graphene.List(graphene.String)
-    dates = graphene.List(graphene.String)
+    sample_scores = graphene.List(graphene.Float)
+    sample_dates = graphene.List(graphene.String)
+    future_dates = graphene.List(graphene.String)
     score_predictions = graphene.List(graphene.Float)
 
 
@@ -92,7 +93,12 @@ class PlayerType(graphene.ObjectType):
         scores = self.score_set.filter(datetime__gte=past_datetime_limit)
         df, future_dates = get_prediction_df(scores)
         prediction = predict_player_future_score(df, future_dates)
-        return ScorePrediction(*[df.index.values, prediction.index.values, prediction.values])
+        return ScorePrediction(*[
+            df.total.values,
+            df.index.values,
+            prediction.index.values,
+            prediction.values
+        ])
 
     def resolve_halfhour_mean_activity(self, info, **kwargs):
         dataframe = get_diff_df(self.score_set.all())
