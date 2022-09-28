@@ -29,9 +29,17 @@ def get_diff_df(player_scores):
     if not data:
         return df
 
+    df['total'].loc[df['total'] < 0] = 0
+    df['economy'].loc[df['economy'] < 0] = 0
+    df['research'].loc[df['research'] < 0] = 0
+    df['military'].loc[df['military'] < 0] = 0
+    df['ships'].loc[df['ships'] < 0] = 0
+    df['military_built'].loc[df['military_built'] < 0] = 0
+    df['military_destroyed'].loc[df['military_destroyed'] < 0] = 0
+    df['military_lost'].loc[df['military_lost'] < 0] = 0
+    df['honor'].loc[df['honor'] < 0] = 0
     df['datetime'] = pd.to_datetime(df['datetime']).dt.tz_convert('America/Sao_Paulo')
     df[columns[1:]] = df[columns[1:]].diff().fillna(0)
-    df[columns[1:]][df[columns[1:]] < 0] = 0
 
     return df
 
