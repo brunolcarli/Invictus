@@ -1,9 +1,11 @@
 from datetime import timedelta, datetime
+import pytz
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance
 from ogame.util import get_diff_df, get_prediction_df
 from ogame.forecast import predict_player_future_score
+import pandas as pd
 
 
 class ScorePrediction(graphene.ObjectType):
@@ -35,6 +37,12 @@ class ScoreDiffType(graphene.ObjectType):
     military_lost = graphene.Float()
     honor = graphene.Float()
 
+    def resolve_datetime(self, info, **kwargs):
+        try:
+            return self.datetime.astimezone(pytz.timezone('America/Sao_Paulo'))
+        except Exception as err:
+            print(f'FieldResolverError: Failed to resolve field with error: {str(err)}')
+
 
 class ScoreType(graphene.ObjectType):
     timestamp = graphene.Int()
@@ -47,6 +55,12 @@ class ScoreType(graphene.ObjectType):
     military_destroyed = DynamicScalar()
     military_lost = DynamicScalar()
     honor = DynamicScalar()
+
+    def resolve_datetime(self, info, **kwargs):
+        try:
+            return self.datetime.astimezone(pytz.timezone('America/Sao_Paulo'))
+        except Exception as err:
+            print(f'FieldResolverError: Failed to resolve field with error: {str(err)}')
 
     def resolve_total(self, info, **kwargs):
         return CompressedDict.decompress_bytes(self.total)
@@ -89,14 +103,14 @@ class PlayerType(graphene.ObjectType):
     score_prediction = graphene.Field(ScorePrediction)
 
     def resolve_score_prediction(self, info, **kwargs):
-        past_datetime_limit = datetime.now() - timedelta(days=15)
+        past_datetime_limit = datetime.now() - timedelta(days=14)
         scores = self.score_set.filter(datetime__gte=past_datetime_limit)
         df, future_dates = get_prediction_df(scores)
         prediction = predict_player_future_score(df, future_dates)
         return ScorePrediction(*[
             df.total.values,
-            df.index.values,
-            prediction.index.values,
+            df.index,
+            prediction.index,
             prediction.values
         ])
 
@@ -144,6 +158,12 @@ class AllianceType(graphene.ObjectType):
     logo = graphene.String()
     homepage = graphene.String()
     application_open = graphene.Boolean()
+
+    def resolve_found_date(self, info, **kwargs):
+        try:
+            return self.datetime.astimezone(pytz.timezone('America/Sao_Paulo'))
+        except Exception as err:
+            print(f'FieldResolverError: Failed to resolve field with error: {str(err)}')
 
 
 class Query(graphene.ObjectType):

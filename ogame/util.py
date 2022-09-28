@@ -1,5 +1,6 @@
 from datetime import datetime
 import pandas as pd
+import pytz
 from ogame.types import CompressedDict
 
 
@@ -28,29 +29,9 @@ def get_diff_df(player_scores):
     if not data:
         return df
 
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    # df = df.set_index('datetime')
-    # df['weekday'] = df.index.strftime('%A')
-
-    df['total'] = df.total.diff()
-    df['economy'] = df.economy.diff()
-    df['research'] = df.research.diff()
-    df['military'] = df.military.diff()
-    df['ships'] = df.ships.diff()
-    df['military_built'] = df.military_built.diff()
-    df['military_destroyed'] = df.military_destroyed.diff()
-    df['military_lost'] = df.military_lost.diff()
-    df['honor'] = df.honor.diff()
-
-    df['total'].loc[df['total'] < 0] = 0
-    df['economy'].loc[df['economy'] < 0] = 0
-    df['research'].loc[df['research'] < 0] = 0
-    df['military'].loc[df['military'] < 0] = 0
-    df['ships'].loc[df['ships'] < 0] = 0
-    df['military_built'].loc[df['military_built'] < 0] = 0
-    df['military_destroyed'].loc[df['military_destroyed'] < 0] = 0
-    df['military_lost'].loc[df['military_lost'] < 0] = 0
-    df['honor'].loc[df['honor'] < 0] = 0
+    df['datetime'] = pd.to_datetime(df['datetime']).dt.tz_convert('America/Sao_Paulo')
+    df[columns[1:]] = df[columns[1:]].diff().fillna(0)
+    df[columns[1:]][df[columns[1:]] < 0] = 0
 
     return df
 
@@ -67,17 +48,18 @@ def get_prediction_df(player_scores):
 
     df = pd.DataFrame(data, columns=['datetime', 'total'])
     if not data:
-        return df
+        return df, []
 
-    offset = 10  # constant hours to forecast
+    offset = 11  # constant hours to forecast
     generation_freq = str(3600*offset)+'S'  # interval of future datetimes generation
 
-    df['datetime'] = pd.to_datetime(df['datetime'])
+    df['datetime'] = pd.to_datetime(df['datetime']).dt.tz_convert('America/Sao_Paulo')
     df = df.set_index('datetime')
     df['date'] = df.index.round(freq=generation_freq)
     df = df[['total', 'date']].groupby('date').mean().fillna(0)
 
-    future_dates = pd.date_range(datetime.now(), periods=15, freq=generation_freq)
-    future_dates = pd.DataFrame(index=pd.to_datetime(future_dates, format='%Y-%m-%d'))
+    now = datetime.now().astimezone(pytz.timezone('America/Sao_Paulo'))
+    future_dates = pd.date_range(now, periods=14, freq=generation_freq).tz_convert('America/Sao_Paulo')
+    future_dates = pd.DataFrame(index=future_dates)
 
     return df, future_dates
