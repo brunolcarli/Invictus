@@ -5,7 +5,6 @@ from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance
 from ogame.util import get_diff_df, get_prediction_df
 from ogame.forecast import predict_player_future_score
-import pandas as pd
 
 
 class ScorePrediction(graphene.ObjectType):
@@ -141,9 +140,6 @@ class PlayerType(graphene.ObjectType):
     def resolve_planets(self, info, **kwargs):
         return CompressedDict.decompress_bytes(self.planets)
 
-    def resolve_scores(self, info, **kwargs):
-        return self.score_set.all()
-
     def resolve_score_diff(self, info, **kwargs):
         dataframe = get_diff_df(self.score_set.all())
         return [ScoreDiffType(*row) for row in dataframe.values[1:]]
@@ -167,7 +163,7 @@ class AllianceType(graphene.ObjectType):
 
 
 class Query(graphene.ObjectType):
-    players = graphene.List(
+    player = graphene.Field(
         PlayerType,
         name__icontains=graphene.String(
             description='Filter by player full or partial name.'
@@ -178,16 +174,69 @@ class Query(graphene.ObjectType):
         player_id=graphene.Int(
             description='Filter by player ingame ID.'
         ),
-        score__datetime__lte=graphene.DateTime(
-            description='Filter players by score collected on lesser or equal inputed datetime.'
+        datetime__lte=graphene.DateTime(
+            description='Filter player score collected on lesser or equal inputed datetime.'
         ),
-        score__datetime__gte=graphene.DateTime(
-            description='Filter players by score collected on greater or equal inputed datetime.'
+        datetime__gte=graphene.DateTime(
+            description='Filter player score collected on greater or equal inputed datetime.'
+        )
+    )
+    def resolve_player(self, info, **kwargs):
+        dt_start = kwargs.pop('datetime__gte', None)
+        dt_stop = kwargs.pop('datetime__lte', None)
+        try:
+            player = Player.objects.get(**kwargs)
+        except Player.DoesNotExist:
+            raise Exception('Player not found')
+        
+        if dt_start is None and dt_stop is None:
+            return player
+
+        if dt_start and dt_stop is None:
+            player.scores = player.score_set.filter(
+                datetime__gte=dt_start.astimezone(pytz.timezone('UTC'))
+            )
+            return player
+        
+        if dt_start is None and dt_stop:
+            player.scores = player.score_set.filter(
+                datetime__lte=dt_stop.astimezone(pytz.timezone('UTC'))
+            )
+            return player
+
+        player.scores = player.score_set.filter(
+            datetime__gte=dt_start.astimezone(pytz.timezone('UTC')),
+            datetime__lte=dt_stop.astimezone(pytz.timezone('UTC'))
+        )
+        return player
+
+    players = graphene.List(
+        PlayerType,
+        name__in=graphene.List(
+            graphene.String,
+            description='Filter by players full name.'
+        ),
+        status=graphene.String(
+            description='Filter by player status.'
+        ),
+        datetime__gte=graphene.DateTime(
+            description='Filter player score collected on greater or equal inputed datetime.'
         )
     )
 
     def resolve_players(self, info, **kwargs):
-        return Player.objects.filter(**kwargs)
+        dt_start = kwargs.pop('datetime__gte', None)
+        players = Player.objects.filter(**kwargs)
+
+        if dt_start is None:
+            return players
+
+        for player in players:
+            player.scores = player.score_set.filter(
+                datetime__gte=dt_start.astimezone(pytz.timezone('UTC'))
+            )
+
+        return players
 
     alliances = graphene.List(
         AllianceType,
