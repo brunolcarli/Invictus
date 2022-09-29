@@ -12,6 +12,7 @@ class ScorePrediction(graphene.ObjectType):
     sample_dates = graphene.List(graphene.String)
     future_dates = graphene.List(graphene.String)
     score_predictions = graphene.List(graphene.Float)
+    current_score = graphene.List(graphene.Float)
 
 
 class HourMeanActivity(graphene.ObjectType):
@@ -109,13 +110,14 @@ class PlayerType(graphene.ObjectType):
     def resolve_score_prediction(self, info, **kwargs):
         past_datetime_limit = datetime.now() - timedelta(days=14)
         scores = self.score_set.filter(datetime__gte=past_datetime_limit)
-        df, future_dates = get_prediction_df(scores)
+        df, future_dates, real_scores = get_prediction_df(scores)
         prediction = predict_player_future_score(df, future_dates)
         return ScorePrediction(*[
             df.total.values,
             df.index,
             prediction.index,
-            prediction.values
+            prediction.values,
+            real_scores
         ])
 
     def resolve_halfhour_mean_activity(self, info, **kwargs):
