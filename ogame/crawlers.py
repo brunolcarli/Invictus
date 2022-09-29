@@ -103,6 +103,8 @@ class OgameStatsCrawler:
         score.save()
 
         if not data.get('alliance'):
+            player.alliance = None
+            player.save()
             return
 
         ally_data = alliances.loc[alliances.id == data['alliance'].get('id')]
