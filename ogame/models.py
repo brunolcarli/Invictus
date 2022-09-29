@@ -43,3 +43,9 @@ class Alliance(models.Model):
     logo = models.TextField(null=True)
     homepage = models.TextField(null=True)
     application_open = models.BooleanField(null=True)
+
+
+class PastScorePrediction(models.Model):
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    date = models.DateField(null=True)
+    prediction = models.BinaryField(null=True)

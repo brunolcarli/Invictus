@@ -2,9 +2,14 @@ from datetime import timedelta, datetime
 import pytz
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
-from ogame.models import Player, Alliance
+from ogame.models import Player, Alliance, PastScorePrediction
 from ogame.util import get_diff_df, get_prediction_df
 from ogame.forecast import predict_player_future_score
+
+
+class LastScorePredictionType(graphene.ObjectType):
+    dates = graphene.List(graphene.String)
+    predictions = graphene.List(graphene.Float)
 
 
 class ScorePrediction(graphene.ObjectType):
@@ -12,6 +17,7 @@ class ScorePrediction(graphene.ObjectType):
     sample_dates = graphene.List(graphene.String)
     future_dates = graphene.List(graphene.String)
     score_predictions = graphene.List(graphene.Float)
+    last_predictions = graphene.Field(LastScorePredictionType)
 
 
 class HourMeanActivity(graphene.ObjectType):
@@ -107,15 +113,34 @@ class PlayerType(graphene.ObjectType):
         return self.score_set.all()
 
     def resolve_score_prediction(self, info, **kwargs):
-        past_datetime_limit = datetime.now() - timedelta(days=14)
+        today = datetime.now()
+        past_datetime_limit = today - timedelta(days=14)
         scores = self.score_set.filter(datetime__gte=past_datetime_limit)
         df, future_dates = get_prediction_df(scores)
         prediction = predict_player_future_score(df, future_dates)
+
+        last_prediction, _ = PastScorePrediction.objects.get_or_create(player=self)
+        if last_prediction.date is None:
+            last_prediction.date = today.date()
+            last_prediction.prediction = CompressedDict({
+                'dates': list(prediction.index.date.astype(str)),
+                'predictions': list(prediction.values)
+            }).bit_string
+            last_prediction.save()
+        elif (today.date() - last_prediction.date).days > 14:
+            last_prediction.date = today.date()
+            last_prediction.prediction = CompressedDict({
+                'dates': list(prediction.index.date.astype(str)),
+                'predictions': list(prediction.values)
+            }).bit_string
+            last_prediction.save()
+
         return ScorePrediction(*[
             df.total.values,
             df.index.date,
             prediction.index.date,
-            prediction.values
+            prediction.values,
+            CompressedDict.decompress_bytes(last_prediction.prediction)
         ])
 
     def resolve_halfhour_mean_activity(self, info, **kwargs):
