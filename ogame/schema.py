@@ -119,21 +119,33 @@ class PlayerType(graphene.ObjectType):
         ])
 
     def resolve_halfhour_mean_activity(self, info, **kwargs):
-        dataframe = get_diff_df(self.score_set.all())
+        if 'scores' in self.__dict__:
+            dataframe = get_diff_df(self.scores)
+        else:
+            dataframe = get_diff_df(self.score_set.all())
+
         dataframe = dataframe.set_index(dataframe.datetime)
         dataframe['halfhour'] = dataframe.index.round(freq='1800S').strftime('%H:'+'%M')
         dataframe = dataframe[['total', 'halfhour']].groupby('halfhour').mean().fillna(0)
         return HourMeanActivity(*[dataframe.index.values, dataframe.total.values])
     
     def resolve_hour_mean_activity(self, info, **kwargs):
-        dataframe = get_diff_df(self.score_set.all())
+        if 'scores' in self.__dict__:
+            dataframe = get_diff_df(self.scores)
+        else:
+            dataframe = get_diff_df(self.score_set.all())
+
         dataframe = dataframe.set_index(dataframe.datetime)
         dataframe['hour'] = dataframe.index.round(freq='3600S').strftime('%H:'+'%M')
         dataframe = dataframe[['total', 'hour']].groupby('hour').mean().fillna(0)
         return HourMeanActivity(*[dataframe.index.values, dataframe.total.values])
 
     def resolve_weekday_mean_activity(self, info, **kwargs):
-        dataframe = get_diff_df(self.score_set.all())
+        if 'scores' in self.__dict__:
+            dataframe = get_diff_df(self.scores)
+        else:
+            dataframe = get_diff_df(self.score_set.all())
+
         dataframe = dataframe.set_index(dataframe.datetime)
         dataframe['weekday'] = dataframe.index.strftime('%A')
         dataframe = dataframe[['total', 'weekday']].groupby('weekday').mean().fillna(0)
@@ -146,7 +158,11 @@ class PlayerType(graphene.ObjectType):
         return CompressedDict.decompress_bytes(self.planets)
 
     def resolve_score_diff(self, info, **kwargs):
-        dataframe = get_diff_df(self.score_set.all())
+        if 'scores' in self.__dict__:
+            dataframe = get_diff_df(self.scores)
+        else:
+            dataframe = get_diff_df(self.score_set.all())
+
         return [ScoreDiffType(*row) for row in dataframe.values[1:]]
 
 
