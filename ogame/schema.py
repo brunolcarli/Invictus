@@ -101,6 +101,11 @@ class PlayerType(graphene.ObjectType):
     halfhour_mean_activity = graphene.Field(HourMeanActivity)
     score_prediction = graphene.Field(ScorePrediction)
 
+    def resolve_scores(self, info, **kwargs):
+        if 'scores' in self.__dict__:
+            return self.scores
+        return self.score_set.all()
+
     def resolve_score_prediction(self, info, **kwargs):
         past_datetime_limit = datetime.now() - timedelta(days=14)
         scores = self.score_set.filter(datetime__gte=past_datetime_limit)
@@ -166,6 +171,7 @@ class Query(graphene.ObjectType):
     player = graphene.Field(
         PlayerType,
         name__icontains=graphene.String(
+            required=True,
             description='Filter by player full or partial name.'
         ),
         status=graphene.String(
