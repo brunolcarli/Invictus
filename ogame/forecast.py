@@ -3,7 +3,7 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 def predict_player_future_score(sample, future_dates):
     y = sample['total']
-    SARIMAXmodel = SARIMAX(y, order=(2, 1, 3), seasonal_order=(2, 1, 3, 26))
+    SARIMAXmodel = SARIMAX(y, order=(2, 1, 3), seasonal_order=(2, 1, 3, len(y)+1))
     SARIMAXmodel = SARIMAXmodel.fit()
 
     y_pred = SARIMAXmodel.get_forecast(len(future_dates))
