@@ -47,19 +47,17 @@ def get_diff_df(player_scores):
 
 def get_prediction_df(player_scores):
     data = []
-    totals = []
     for score in player_scores:
         try:
             dt = score.datetime
             total = CompressedDict.decompress_bytes(score.total)['score']
             data.append([dt, total])
-            totals.append(total)
         except:
             continue
 
     df = pd.DataFrame(data, columns=['datetime', 'total'])
     if not data:
-        return df, [], totals
+        return df, []
 
     offset = 11  # constant hours to forecast
     generation_freq = str(3600*offset)+'S'  # interval of future datetimes generation
@@ -73,4 +71,4 @@ def get_prediction_df(player_scores):
     future_dates = pd.date_range(now, periods=14, freq=generation_freq).tz_convert('America/Sao_Paulo')
     future_dates = pd.DataFrame(index=future_dates)
 
-    return df, future_dates, totals[-len(df):]
+    return df, future_dates
