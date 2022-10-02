@@ -12,6 +12,11 @@ class PlanetType(graphene.ObjectType):
     galaxy = graphene.Int()
     solar_system = graphene.Int()
     position = graphene.Int()
+    name = graphene.String()
+    raw_coord = graphene.String()
+
+    def resolve_raw_coord(self, info, **kwargs):
+        return f'{self.galaxy}:{self.solar_system}:{self.position}'
 
 
 class LastScorePredictionType(graphene.ObjectType):
@@ -104,7 +109,7 @@ class PlayerType(graphene.ObjectType):
     server_id = graphene.String()
     name = graphene.String()
     status = graphene.String()
-    planets = DynamicScalar()
+    planets = graphene.List(PlanetType)
     scores = graphene.List(ScoreType)
     alliance = graphene.Field('ogame.schema.AllianceType')
     alliances_founded = graphene.List('ogame.schema.AllianceType')
@@ -113,6 +118,10 @@ class PlayerType(graphene.ObjectType):
     hour_mean_activity = graphene.Field(HourMeanActivity)
     halfhour_mean_activity = graphene.Field(HourMeanActivity)
     score_prediction = graphene.Field(ScorePrediction)
+    planet_count = graphene.Int()
+
+    def resolve_planet_count(self, info, **kwargs):
+        return len(CompressedDict.decompress_bytes(self.planets))
 
     def resolve_scores(self, info, **kwargs):
         if 'scores' in self.__dict__:
@@ -187,7 +196,14 @@ class PlayerType(graphene.ObjectType):
         return Alliance.objects.filter(founder__player_id=self.player_id)
 
     def resolve_planets(self, info, **kwargs):
-        return CompressedDict.decompress_bytes(self.planets)
+        data = CompressedDict.decompress_bytes(self.planets).get('planet', [])
+        planets = []
+        for planet in data:
+            coords = planet['coords'].split(':')
+            coords.append(planet['name'])
+            planets.append(coords)
+
+        return [PlanetType(*planet) for planet in planets]
 
     def resolve_score_diff(self, info, **kwargs):
         if 'scores' in self.__dict__:
