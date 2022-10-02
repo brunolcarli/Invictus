@@ -118,10 +118,10 @@ class PlayerType(graphene.ObjectType):
     hour_mean_activity = graphene.Field(HourMeanActivity)
     halfhour_mean_activity = graphene.Field(HourMeanActivity)
     score_prediction = graphene.Field(ScorePrediction)
-    planet_count = graphene.Int()
+    planets_count = graphene.Int()
 
-    def resolve_planet_count(self, info, **kwargs):
-        return len(CompressedDict.decompress_bytes(self.planets))
+    def resolve_planets_count(self, info, **kwargs):
+        return len(CompressedDict.decompress_bytes(self.planets).get('planet', []))
 
     def resolve_scores(self, info, **kwargs):
         if 'scores' in self.__dict__:
@@ -226,6 +226,18 @@ class AllianceType(graphene.ObjectType):
     members = graphene.List(PlayerType)
     planets_distribution_coords = graphene.List(PlanetType)
     planets_distribution_by_galaxy = DynamicScalar()
+    players_count = graphene.Int()
+    planets_count = graphene.Int()
+
+    def resolve_players_count(self, info, **kwargs):
+        return self.members.count()
+
+    def resolve_planets_count(self, info, **kwargs):
+        try:
+            planets = literal_eval(self.planets_distribution_coords.decode('utf-8'))
+        except:
+            return 0
+        return len(planets)
 
     def resolve_members(self, info, **kwargs):
         return self.members.all()
