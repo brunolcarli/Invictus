@@ -352,6 +352,16 @@ class Query(graphene.ObjectType):
     def resolve_alliances(self, info, **kwargs):
         return Alliance.objects.filter(**kwargs)
 
+    alliance = graphene.Field(
+        AllianceType,
+        name__icontains=graphene.String(required=True),
+        ally_id=graphene.Int()
+    )
+
+    def resolve_alliance(self, info, **kwargs):
+        return Alliance.objects.get(**kwargs)
+
+
     scores = graphene.List(ScoreType)
 
     def resolve_scores(self, info, **kwargs):
