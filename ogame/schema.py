@@ -8,6 +8,12 @@ from ogame.util import get_diff_df, get_prediction_df
 from ogame.forecast import predict_player_future_score
 
 
+class PlanetType(graphene.ObjectType):
+    galaxy = graphene.Int()
+    solar_system = graphene.Int()
+    position = graphene.Int()
+
+
 class LastScorePredictionType(graphene.ObjectType):
     dates = graphene.List(graphene.String)
     predictions = graphene.List(graphene.Float)
@@ -202,7 +208,7 @@ class AllianceType(graphene.ObjectType):
     homepage = graphene.String()
     application_open = graphene.Boolean()
     members = graphene.List(PlayerType)
-    planets_distribution_coords = graphene.List(graphene.String)
+    planets_distribution_coords = graphene.List(PlanetType)
     planets_distribution_by_galaxy = DynamicScalar()
 
     def resolve_members(self, info, **kwargs):
@@ -213,7 +219,7 @@ class AllianceType(graphene.ObjectType):
             planets = literal_eval(self.planets_distribution_coords.decode('utf-8'))
         except:
             return None
-        return planets
+        return [PlanetType(*planet.split(':')) for planet in planets]
 
     def resolve_planets_distribution_by_galaxy(self, info, **kwargs):
         return CompressedDict.decompress_bytes(self.planets_distribution_by_galaxy)
