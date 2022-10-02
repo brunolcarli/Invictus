@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 import pytz
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
-from ogame.models import Player, Alliance, PastScorePrediction
+from ogame.models import Player, Alliance, PastScorePrediction, Score
 from ogame.util import get_diff_df, get_prediction_df
 from ogame.forecast import predict_player_future_score
 
@@ -310,3 +310,8 @@ class Query(graphene.ObjectType):
 
     def resolve_alliances(self, info, **kwargs):
         return Alliance.objects.filter(**kwargs)
+
+    scores = graphene.List(ScoreType)
+
+    def resolve_scores(self, info, **kwargs):
+        return Score.objects.filter(**kwargs)
