@@ -1,3 +1,4 @@
+from ast import literal_eval
 from datetime import timedelta, datetime
 import pytz
 import graphene
@@ -200,6 +201,22 @@ class AllianceType(graphene.ObjectType):
     logo = graphene.String()
     homepage = graphene.String()
     application_open = graphene.Boolean()
+    members = graphene.List(PlayerType)
+    planets_distribution_coords = graphene.List(graphene.String)
+    planets_distribution_by_galaxy = DynamicScalar()
+
+    def resolve_members(self, info, **kwargs):
+        return self.members.all()
+
+    def resolve_planets_distribution_coords(self, info, **kwargs):
+        try:
+            planets = literal_eval(self.planets_distribution_coords.decode('utf-8'))
+        except:
+            return None
+        return planets
+
+    def resolve_planets_distribution_by_galaxy(self, info, **kwargs):
+        return CompressedDict.decompress_bytes(self.planets_distribution_by_galaxy)
 
     def resolve_found_date(self, info, **kwargs):
         try:

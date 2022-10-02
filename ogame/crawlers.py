@@ -145,6 +145,32 @@ class OgameStatsCrawler:
         print('Done!')
 
     @staticmethod
+    def update_ally_data(ally, universe):
+        try:
+            galaxy_distribution = universe.get_planets_distribution_by_galaxy(ally.tag)
+        except:
+            raise Exception(f'Failed retrieving distribution data of ally: {ally.name}')
+
+        try:
+            ally_planets = universe.get_planets_of_alliance(ally.tag)
+        except:
+            raise Exception(f'Failed retrieving planets data of ally: {ally.name}')
+
+        try:
+            ally_members = universe.get_players_of_alliance(ally.tag).id.astype('int').values
+        except:
+            raise Exception(f'Failed retrieving members of ally: {ally.name}')
+
+        print(f'Updating alliance: {ally.name}')
+        ally.planets_distribution_coords = CompressedDict(ally_planets).bit_string
+        ally.planets_distribution_by_galaxy = CompressedDict(galaxy_distribution).bit_string
+        
+        ally.members.clear()
+        ally.members.set(Player.objects.filter(player_id__in=ally_members))
+        ally.save()
+        print(f'Updated alliance {ally.name} data!')
+
+    @staticmethod
     def crawl():
         while True:
             universe = OgameStatsCrawler.get_universe_data()
@@ -162,5 +188,12 @@ class OgameStatsCrawler:
                     )
                 except Exception as err:
                     print(f'Crawling Error: Failed updating player {player_name} with error: {str(err)}')
+                    continue
+            
+            for alliance in Alliance.objects.all():
+                try:
+                    OgameStatsCrawler.update_ally_data(alliance, universe)
+                except Exception as err:
+                    print(f'CrawlingError: Failed updating alliance {alliance.name} with error: {str(err)}')
                     continue
             sleep(3600*2)

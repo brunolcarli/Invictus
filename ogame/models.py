@@ -43,6 +43,9 @@ class Alliance(models.Model):
     logo = models.TextField(null=True)
     homepage = models.TextField(null=True)
     application_open = models.BooleanField(null=True)
+    members = models.ManyToManyField(Player, related_name='ally_members')
+    planets_distribution_coords = models.BinaryField(null=True)
+    planets_distribution_by_galaxy = models.BinaryField(null=True)
 
 
 class PastScorePrediction(models.Model):
