@@ -228,6 +228,13 @@ class AllianceType(graphene.ObjectType):
     planets_distribution_by_galaxy = DynamicScalar()
     players_count = graphene.Int()
     planets_count = graphene.Int()
+    ships_count = graphene.Int()
+
+    def resolve_ships_count(self, info, **kwargs):
+        members = self.members.all()
+        ships = [CompressedDict.decompress_bytes(member.score_set.last().military).get('ships', 0)
+                 for member in members]
+        return sum(ships)
 
     def resolve_players_count(self, info, **kwargs):
         return self.members.count()
