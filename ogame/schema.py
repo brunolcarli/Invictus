@@ -327,6 +327,16 @@ class Query(graphene.ObjectType):
         status=graphene.String(
             description='Filter by player status.'
         ),
+        status__in=graphene.List(
+            graphene.String,
+            description='Filter players by possible status'
+        ),
+        rank__gte=graphene.Int(
+            description='Filter player by rank greather equal value'
+        ),
+        rank__lte=graphene.Int(
+            description='Filter player by rank lesser equal value'
+        ),
         datetime__gte=graphene.DateTime(
             description='Filter player score collected on greater or equal inputed datetime.'
         )
@@ -337,7 +347,7 @@ class Query(graphene.ObjectType):
         players = Player.objects.filter(**kwargs)
 
         if dt_start is None:
-            return players
+            return players.order_by('rank').values()
 
         for player in players:
             player.scores = player.score_set.filter(
