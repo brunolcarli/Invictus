@@ -119,6 +119,7 @@ class PlayerType(graphene.ObjectType):
     halfhour_mean_activity = graphene.Field(HourMeanActivity)
     score_prediction = graphene.Field(ScorePrediction)
     planets_count = graphene.Int()
+    rank = graphene.Int()
 
     def resolve_planets_count(self, info, **kwargs):
         return len(CompressedDict.decompress_bytes(self.planets).get('planet', []))

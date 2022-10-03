@@ -7,6 +7,7 @@ class Player(models.Model):
     server_id = models.CharField(max_length=10)
     planets = models.BinaryField()
     status = models.CharField(max_length=4, null=True)
+    rank = models.IntegerField(null=True)
     alliance = models.ForeignKey(
         'ogame.Alliance',
         on_delete=models.CASCADE,

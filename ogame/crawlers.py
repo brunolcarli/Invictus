@@ -101,6 +101,8 @@ class OgameStatsCrawler:
         ).bit_string
         score.datetime = dt_reference
         score.save()
+        player.rank = int(total[0])
+        player.save()
 
         if not data.get('alliance'):
             player.alliance = None
