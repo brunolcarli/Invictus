@@ -347,7 +347,7 @@ class Query(graphene.ObjectType):
         players = Player.objects.filter(**kwargs)
 
         if dt_start is None:
-            return players.order_by('rank').values()
+            return players.order_by('rank')
 
         for player in players:
             player.scores = player.score_set.filter(
