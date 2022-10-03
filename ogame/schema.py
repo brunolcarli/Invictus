@@ -197,6 +197,8 @@ class PlayerType(graphene.ObjectType):
 
     def resolve_planets(self, info, **kwargs):
         data = CompressedDict.decompress_bytes(self.planets).get('planet', [])
+        if not isinstance(data, list):
+            return None
         planets = []
         for planet in data:
             coords = planet['coords'].split(':')
