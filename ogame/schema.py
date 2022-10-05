@@ -161,7 +161,7 @@ class PlayerType(graphene.ObjectType):
                 'predictions': list(prediction.values)
             }).bit_string
             last_prediction.save()
-        elif (today.date() - last_prediction.date).days > 14:
+        elif (today.date() - last_prediction.date).days > 2:
             last_prediction.date = today.date()
             last_prediction.prediction = CompressedDict({
                 'dates': list(prediction.index.date.astype(str)),
