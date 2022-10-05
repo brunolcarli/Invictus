@@ -11,3 +11,4 @@ django-cors-headers==3.0.2
 ogame-stats==0.3.6
 pandas==1.4.4
 statsmodels==0.13.2
+scikit-learn==1.1.2
