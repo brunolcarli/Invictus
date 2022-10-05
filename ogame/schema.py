@@ -122,6 +122,10 @@ class PlayerType(graphene.ObjectType):
     activity_prediction = DynamicScalar()
     planets_count = graphene.Int()
     rank = graphene.Int()
+    ships_count = graphene.Int()
+
+    def resolve_ships_count(self, info, **kwargs):
+        return CompressedDict.decompress_bytes(self.score_set.last().military).get('ships', 0)
 
     def resolve_activity_prediction(self, info, **kwargs):
         if 'scores' in self.__dict__:
