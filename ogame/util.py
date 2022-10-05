@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
 import pytz
 from ogame.types import CompressedDict
 
@@ -63,3 +64,74 @@ def get_prediction_df(player_scores):
     future_dates = pd.DataFrame(index=future_dates)
 
     return df, future_dates
+
+
+def get_future_activity(player_scores):
+    data = []
+    datetimes = []
+    for score in player_scores:
+        try:
+            dt = score.datetime
+            total = CompressedDict.decompress_bytes(score.total)['score']
+            data.append([dt, total])
+            datetimes.append(dt)
+        except:
+            continue
+
+    # set up dataframe indexed by dayhours
+    df = pd.DataFrame(
+        data, columns=['datetime', 'score'],
+        index=pd.to_datetime(datetimes).tz_convert('America/Sao_Paulo').strftime('%H')
+    )
+    day_to_int = {
+        'Monday': 1,
+        'Tuesday': 2,
+        'Wednesday': 3,
+        'Thursday': 4,
+        'Friday': 5,
+        'Saturday': 6,
+        'Sunday': 7
+    }
+    df['datetime'] = pd.to_datetime(df['datetime']).dt.tz_convert('America/Sao_Paulo')
+    df['hour'] = df['datetime'].dt.strftime('%H').astype(int)
+    df['weekday'] = df['datetime'].dt.strftime('%A')
+    df['int_day'] = [day_to_int.get(i, 0) for i in df.weekday.values]
+    
+    # ignore not found days (int day == 0)
+    df = df.loc[df['int_day'] != 0]
+
+    # manually calculate score diff based on total score over time
+    vals = [df.score.values[0]]
+    for i in df.score.values[1:]:
+        prev = sum(vals)
+        vals.append(i - prev)
+    df['DIFF'] = vals
+
+    # define an estimator and train it over player score diff 
+    estimator = RandomForestRegressor()
+    estimator.fit(df[['hour', 'int_day']].values, df.DIFF)
+
+    # Generate one week ahead
+    future_dates = pd.date_range(
+        datetime.now().astimezone(pytz.timezone('America/Sao_Paulo')).replace(hour=0) + timedelta(days=1),
+        periods=24*7,
+        freq='H'
+    )
+
+    # transform future dates into model expected input type
+    temp = [[i.strftime('%A'), i.hour, day_to_int[i.strftime('%A')]]
+                    for i in future_dates]
+
+    # slice transformed data into ach next week day with 24 hours each day
+    offset = 24
+    X_input = [temp[i:i+offset] for i in range(0, len(temp), offset)]
+
+    # Create a new dataframe with pretions to each future weekday
+    preds = pd.DataFrame()
+    for day in X_input:
+        col = []
+        for point in day:
+            col.append(estimator.predict([point[1:]])[0])
+        preds[point[0]] = col
+
+    return preds

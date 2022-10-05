@@ -1,10 +1,11 @@
+from collections import OrderedDict
 from ast import literal_eval
 from datetime import timedelta, datetime
 import pytz
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance, PastScorePrediction, Score
-from ogame.util import get_diff_df, get_prediction_df
+from ogame.util import get_diff_df, get_prediction_df, get_future_activity
 from ogame.forecast import predict_player_future_score
 
 
@@ -118,8 +119,20 @@ class PlayerType(graphene.ObjectType):
     hour_mean_activity = graphene.Field(HourMeanActivity)
     halfhour_mean_activity = graphene.Field(HourMeanActivity)
     score_prediction = graphene.Field(ScorePrediction)
+    activity_prediction = DynamicScalar()
     planets_count = graphene.Int()
     rank = graphene.Int()
+
+    def resolve_activity_prediction(self, info, **kwargs):
+        if 'scores' in self.__dict__:
+            scores = self.scores
+        else:
+            scores = self.score_set.all()
+        if not scores:
+            return None
+
+        preds = get_future_activity(scores)
+        return OrderedDict({i: list(preds[i].values) for i in preds.columns})
 
     def resolve_planets_count(self, info, **kwargs):
         return len(CompressedDict.decompress_bytes(self.planets).get('planet', []))

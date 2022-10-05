@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import json
 from typing import Optional, DefaultDict, Dict
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from graphene.types.scalars import MAX_INT, MIN_INT, Scalar
 from graphql.language.ast import (BooleanValue, FloatValue, IntValue,
                                   ListValue, ObjectValue, StringValue)
@@ -17,7 +17,7 @@ class DynamicScalar(Scalar):
     @staticmethod
     def identity(value):
         try:
-            return value._asdict()
+            return OrderedDict(value._asdict())
         except:
             return value
 
@@ -37,7 +37,7 @@ class DynamicScalar(Scalar):
         elif isinstance(ast, ListValue):
             return [DynamicScalar.parse_literal(value) for value in ast.values]
         elif isinstance(ast, ObjectValue):
-            return {field.name.value: DynamicScalar.parse_literal(field.value) for field in ast.fields}
+            return OrderedDict({field.name.value: DynamicScalar.parse_literal(field.value) for field in ast.fields})
         else:
             return None
 
