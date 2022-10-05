@@ -99,17 +99,13 @@ def get_future_activity(player_scores):
     
     # ignore not found days (int day == 0)
     df = df.loc[df['int_day'] != 0]
-
-    # manually calculate score diff based on total score over time
-    vals = [df.score.values[0]]
-    for i in df.score.values[1:]:
-        prev = sum(vals)
-        vals.append(i - prev)
-    df['DIFF'] = vals
+    
+    # get score diff
+    df['DIFF'] = df.score.diff()
 
     # define an estimator and train it over player score diff 
     estimator = RandomForestRegressor()
-    estimator.fit(df[['hour', 'int_day']].values, df.DIFF)
+    estimator.fit(df[['hour', 'int_day']].values[1:], df.DIFF[1:])  # the 0 index is a NaN
 
     # Generate one week ahead
     future_dates = pd.date_range(
@@ -133,6 +129,6 @@ def get_future_activity(player_scores):
         for point in day:
             col.append(estimator.predict([point[1:]])[0])
         preds[point[0]] = col
-    preds = preds.clip(upper=100)
+
     preds = preds.clip(0)
     return preds
