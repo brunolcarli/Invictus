@@ -134,4 +134,5 @@ def get_future_activity(player_scores):
             col.append(estimator.predict([point[1:]])[0])
         preds[point[0]] = col
     preds = preds.clip(upper=100)
+    preds = preds.clip(0)
     return preds
