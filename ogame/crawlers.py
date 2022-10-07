@@ -340,7 +340,7 @@ class OgameForumCrawler:
             except Exception as err:
                 print(f'Failed saving report {thread.get("url")} with error {str(err)}')
                 continue
-            sleep(3600*24)
+        sleep(3600*24)
 
 
 class ForumReportText:
