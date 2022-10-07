@@ -62,7 +62,8 @@ class CombatReport(models.Model):
     winner = models.CharField(max_length=50, null=True, blank=True)
     attackers = models.BinaryField(null=True)
     defenders = models.BinaryField(null=True)
-
+    attacker_players = models.ManyToManyField(Player, related_name='combat_report_attacker')
+    defender_players = models.ManyToManyField(Player, related_name='combat_report_defender')
 
 # class ActivityPredictionHistory(models.Model):
 #     player = models.ForeignKey(Player, on_delete=models.CASCADE)

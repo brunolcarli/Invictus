@@ -285,6 +285,7 @@ class AllianceType(graphene.ObjectType):
         except Exception as err:
             print(f'FieldResolverError: Failed to resolve field with error: {str(err)}')
 
+
 class CombatReportType(graphene.ObjectType):
     title = graphene.String()
     url = graphene.String()
@@ -292,6 +293,14 @@ class CombatReportType(graphene.ObjectType):
     date = graphene.Date()
     attackers = DynamicScalar()
     defenders = DynamicScalar()
+    attacker_players = graphene.List(PlayerType)
+    defender_players = graphene.List(PlayerType)
+
+    def resolve_attacker_players(self, info, **kwargs):
+        return self.attacker_players.all()
+
+    def resolve_defender_players(self, info, **kwargs):
+        return self.defender_players.all()
 
     def resolve_attackers(self, info, **kwargs):
         return CompressedDict.decompress_bytes(self.attackers)
