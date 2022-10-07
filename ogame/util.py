@@ -5,6 +5,19 @@ import pytz
 from ogame.types import CompressedDict
 
 
+def day_to_int(weekday):
+    conversion_table = {
+        'Monday': 1,
+        'Tuesday': 2,
+        'Wednesday': 3,
+        'Thursday': 4,
+        'Friday': 5,
+        'Saturday': 6,
+        'Sunday': 7
+    }
+    return conversion_table.get(weekday, 0)
+
+
 def get_diff_df(player_scores):
     data = []
     for score in player_scores:
@@ -66,7 +79,7 @@ def get_prediction_df(player_scores):
     return df, future_dates
 
 
-def get_future_activity(player_scores):
+def get_activity_df(player_scores):
     data = []
     datetimes = []
     for score in player_scores:
@@ -83,29 +96,28 @@ def get_future_activity(player_scores):
         data, columns=['datetime', 'score'],
         index=pd.to_datetime(datetimes).tz_convert('America/Sao_Paulo').strftime('%H')
     )
-    day_to_int = {
-        'Monday': 1,
-        'Tuesday': 2,
-        'Wednesday': 3,
-        'Thursday': 4,
-        'Friday': 5,
-        'Saturday': 6,
-        'Sunday': 7
-    }
+
     df['datetime'] = pd.to_datetime(df['datetime']).dt.tz_convert('America/Sao_Paulo')
     df['hour'] = df['datetime'].dt.strftime('%H').astype(int)
     df['weekday'] = df['datetime'].dt.strftime('%A')
-    df['int_day'] = [day_to_int.get(i, 0) for i in df.weekday.values]
+    df['int_day'] = [day_to_int(i) for i in df.weekday.values]
     
     # ignore not found days (int day == 0)
     df = df.loc[df['int_day'] != 0]
     
     # get score diff
     df['DIFF'] = df.score.diff()
+    df = df.fillna(0)
+
+    return df
+
+
+def get_future_activity(player_scores):
+    df = get_activity_df(player_scores)
 
     # define an estimator and train it over player score diff 
     estimator = RandomForestRegressor()
-    estimator.fit(df[['hour', 'int_day']].values[1:], df.DIFF[1:])  # the 0 index is a NaN
+    estimator.fit(df[['hour', 'int_day']].values, df.DIFF)
 
     # Generate one week ahead
     future_dates = pd.date_range(
@@ -115,7 +127,7 @@ def get_future_activity(player_scores):
     )
 
     # transform future dates into model expected input type
-    temp = [[i.strftime('%A'), i.hour, day_to_int[i.strftime('%A')]]
+    temp = [[i.strftime('%A'), i.hour, day_to_int(i.strftime('%A'))]
                     for i in future_dates]
 
     # slice transformed data into ach next week day with 24 hours each day
@@ -132,3 +144,12 @@ def get_future_activity(player_scores):
 
     preds = preds.clip(0)
     return preds
+
+
+# def update_activity_pred_history(player):
+#     """
+#     Saves a week (7 days) activity prediction for future comparison
+#     """
+#     ...
+    
+
