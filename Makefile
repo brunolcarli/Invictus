@@ -14,6 +14,9 @@ migrate:
 crawl_ogame:
 	python manage.py crawl_ogame --settings=invictus.settings.${ENV_REF}
 
+crawl_combat_reports:
+	python manage.py crawl_forum_combat_reports --settings=invictus.settings.${ENV_REF}
+
 target: crawl_ogame run
 
 pipe:

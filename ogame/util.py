@@ -151,5 +151,3 @@ def get_future_activity(player_scores):
 #     Saves a week (7 days) activity prediction for future comparison
 #     """
 #     ...
-    
-

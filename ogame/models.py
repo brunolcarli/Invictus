@@ -53,3 +53,21 @@ class PastScorePrediction(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
     date = models.DateField(null=True)
     prediction = models.BinaryField(null=True)
+
+
+class CombatReport(models.Model):
+    url = models.TextField()
+    title = models.TextField()
+    date = models.DateField(null=True)
+    winner = models.CharField(max_length=50, null=True, blank=True)
+    attackers = models.BinaryField(null=True)
+    defenders = models.BinaryField(null=True)
+
+
+# class ActivityPredictionHistory(models.Model):
+#     player = models.ForeignKey(Player, on_delete=models.CASCADE)
+#     start_date = models.DateField(null=True)
+#     end_date = models.DateField(null=True)
+#     predicted = models.BinaryField(null=True)
+#     groundtruth = models.BinaryField(null=True)
+

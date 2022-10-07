@@ -1,8 +1,12 @@
+import re
+import requests
+from bs4 import BeautifulSoup
+from dateutil import parser
 from time import sleep
 from datetime import datetime
 import warnings
 import ogame_stats
-from ogame.models import Player, Score, Alliance
+from ogame.models import Player, Score, Alliance, CombatReport
 from ogame.types import CompressedDict
 
 
@@ -10,6 +14,9 @@ warnings.filterwarnings('ignore')
 
 
 class OgameStatsCrawler:
+    """
+    Scaps data from Ogame API.
+    """
     SERVER_ID = 144
     COMMUNITY = 'br'
 
@@ -199,3 +206,197 @@ class OgameStatsCrawler:
                     print(f'CrawlingError: Failed updating alliance {alliance.name} with error: {str(err)}')
                     continue
             sleep(3600*2)
+
+
+class OgameForumCrawler:
+    """
+    Scraps data from Ogame Forum
+    """
+    FORUM_URL = 'https://forum.pt.ogame.gameforge.com/forum/board/26-relat%C3%B3rios-de-combate/?labelIDs%5B2%5D=75'
+
+    @staticmethod
+    def get_thread_list():
+        response = requests.get(OgameForumCrawler.FORUM_URL).content
+        main_threads_html = BeautifulSoup(response, 'html.parser')
+        combat_reports = main_threads_html.findAll(class_='messageGroupLink')
+        return [{'title': i.text, 'url': i.attrs.get('href')} for i in combat_reports]
+
+    @staticmethod
+    def is_defense(text):
+        return bool(ForumReportText.DEFENSES_REGEX.search(text))
+
+    @staticmethod
+    def is_ship(text):
+        return bool(ForumReportText.SHIPS_REGEX.search(text))
+
+    @staticmethod
+    def is_noise(text):
+        return bool(ForumReportText.NOISE_REGEX.search(text))
+
+    @staticmethod
+    def get_count(text):
+        tokens = text.split()
+        for token in tokens:
+            match = re.search('[0-9]+.+[0-9]', token)
+            if bool(match):
+                return int(token.replace('.', ''))
+
+        # if no floating point number was found maybe its preented as integer
+        for token in tokens:
+            match = re.search('[0-9]', token)
+            if bool(match):
+                return int(token)
+
+    @staticmethod
+    def get_ship_from_text(text):
+        eye = ForumReportText.SHIPS_REGEX.search(text)
+        start, end = eye.start(), eye.end()
+        return text[start:end]
+
+    @staticmethod
+    def get_defense_from_text(text):
+        eye = ForumReportText.DEFENSES_REGEX.search(text)
+        start, end = eye.start(), eye.end()
+        return text[start:end]
+
+    @staticmethod
+    def get_report_combat_data(message_text):
+        combat_data = {
+            'date': None,
+            'attackers': {},
+            'defenders': {},
+            'winner': None
+        }
+        cursor = None
+
+        for text_line in message_text:
+            text_line = text_line.text
+
+            if OgameForumCrawler.is_noise(text_line):
+                continue
+
+            elif '--:--:--' in text_line:
+                combat_data['date'] = str(parser.parse(text_line, fuzzy=True).date())
+
+            elif 'Atacante' in text_line:
+                attacker = text_line.split('Atacante')[-1].strip()
+                cursor = ('attackers', attacker)
+                if attacker not in combat_data['attackers']:
+                    combat_data['attackers'][attacker] = {'ships': {}}
+
+            elif OgameForumCrawler.is_ship(text_line):
+                subject, name = cursor
+                ship = OgameForumCrawler.get_ship_from_text(text_line)
+                count = OgameForumCrawler.get_count(text_line)
+                combat_data[subject][name]['ships'][ship] = count
+
+            elif 'Defensor' in text_line:
+                defender = text_line.split('Defensor')[-1].strip()
+                cursor = ('defenders', defender)
+                if defender not in combat_data['defenders']:
+                    combat_data['defenders'][defender] = {'ships': {}, 'defenses': {}}
+
+            elif OgameForumCrawler.is_defense(text_line):
+                subject, name = cursor
+                defense = OgameForumCrawler.get_defense_from_text(text_line)
+                count = OgameForumCrawler.get_count(text_line)
+                combat_data[subject][name]['defenses'][defense] = count
+                    
+            elif 'venceu a batalha' in text_line:
+                if 'atacante' in text_line.lower():
+                    combat_data['winner'] = 'attackers'
+                else:
+                    combat_data['winner'] = 'attackers'
+
+        return combat_data
+
+    @staticmethod
+    def crawl():
+        threads = OgameForumCrawler.get_thread_list()
+        for thread in threads:
+            url = thread.get('url')
+            if not url:
+                continue
+
+            combat_report, created = CombatReport.objects.get_or_create(
+                title=thread['title'],
+                url=url
+            )
+            if not created:
+                continue
+
+            thread_html = BeautifulSoup(requests.get(url).content, 'html.parser')
+            message_text = thread_html.find(class_='messageText').findAll('p')
+            report_data = OgameForumCrawler.get_report_combat_data(message_text)
+
+            try:
+                combat_report.date = parser.parse(report_data['date'])
+                combat_report.winner = report_data['winner']
+                combat_report.attackers = CompressedDict(report_data['attackers']).bit_string
+                combat_report.defenders = CompressedDict(report_data['defenders']).bit_string
+                combat_report.save()
+            except Exception as err:
+                print(f'Failed saving report {thread.get("url")} with error {str(err)}')
+                continue
+            sleep(3600*24)
+
+
+class ForumReportText:
+    """
+    Filter tool to some common words on forum combat reports.
+    """
+    SHIPS = (
+        'Caça Ligeiro', 'Light Fighter',
+        'Caça Pesado', 'Heavy Fighter',
+        'Cruzador', 'Cruiser',
+        'Nave de Batalha', 'Battleship',
+        'Interceptador', 'Interceptor', 'Battlecruiser',
+        'Destruidor', 'Destroyer',
+        'Estrela da Morte', 'Deathstar', 'Death Star', 'EDM',
+        'Ceifeira', 'Reaper',
+        'Explorador', 'Pathfinder',
+        'Cargueiro Pequeno', 'Small Cargo',
+        'Cargueiro Grande', 'Large Cargo',
+        'Nave Colonizadora', 'Nave de Colonização', 'Colony Ship',
+        'Reciclador', 'Recycler',
+        'Sonda de Espionagem', 'Espionage Probe',
+        'Satélite Solar', 'Solar Satellite',
+        'Rastejador', 'Crawler'
+    )
+
+    DEFENSES = (
+        'Lançador de Mísseis',
+        'Laser Ligeiro',
+        'Laser Pesado',
+        'Canhão de Gauss',
+        'Canhão de Íons',
+        'Canhão de Plasma',
+        'Pequeno Escudo Planetário',
+        'Grande Escudo Planetário',
+        'Canhão de Iões'
+    )
+
+    NOISES = (
+        '__________',
+        'Depois da batalha',
+        'Destruído',
+        'roubou',
+        'Metal',
+        'Cristal',
+        'Deutério',
+        'perdeu',
+        'total',
+        'totais',
+        'coordenada',
+        'probabilidade',
+        'reciclados',
+        'lucros',
+        'perdas',
+        'perda',
+        'Sumário',
+        'Conversor'
+    )
+
+    SHIPS_REGEX = re.compile("|".join(SHIPS))
+    DEFENSES_REGEX = re.compile("|".join(DEFENSES))
+    NOISE_REGEX = re.compile("|".join(NOISES))
