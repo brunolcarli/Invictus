@@ -315,7 +315,9 @@ class OgameForumCrawler:
         threads = OgameForumCrawler.get_thread_list()
         for thread in threads:
             url = thread.get('url')
-            if not url:
+            title = thread.get('title')
+            if not url or not title:
+                print(f'Skipping save of thread {thread}')
                 continue
 
             combat_report, created = CombatReport.objects.get_or_create(
@@ -352,6 +354,7 @@ class ForumReportText:
         'Nave de Batalha', 'Battleship',
         'Interceptador', 'Interceptor', 'Battlecruiser',
         'Destruidor', 'Destroyer',
+        'Bombardeiro', 'Bomber',
         'Estrela da Morte', 'Deathstar', 'Death Star', 'EDM',
         'Ceifeira', 'Reaper',
         'Explorador', 'Pathfinder',
