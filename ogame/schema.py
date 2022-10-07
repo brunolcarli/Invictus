@@ -4,7 +4,7 @@ from datetime import timedelta, datetime
 import pytz
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
-from ogame.models import Player, Alliance, PastScorePrediction, Score
+from ogame.models import Player, Alliance, PastScorePrediction, Score, CombatReport
 from ogame.util import get_diff_df, get_prediction_df, get_future_activity
 from ogame.forecast import predict_player_future_score
 
@@ -285,6 +285,20 @@ class AllianceType(graphene.ObjectType):
         except Exception as err:
             print(f'FieldResolverError: Failed to resolve field with error: {str(err)}')
 
+class CombatReportType(graphene.ObjectType):
+    title = graphene.String()
+    url = graphene.String()
+    winner = graphene.String()
+    date = graphene.Date()
+    attackers = DynamicScalar()
+    defenders = DynamicScalar()
+
+    def resolve_attackers(self, info, **kwargs):
+        return CompressedDict.decompress_bytes(self.attackers)
+
+    def resolve_defenders(self, info, **kwargs):
+        return CompressedDict.decompress_bytes(self.defenders)
+
 
 class Query(graphene.ObjectType):
     player = graphene.Field(
@@ -396,3 +410,10 @@ class Query(graphene.ObjectType):
 
     def resolve_scores(self, info, **kwargs):
         return Score.objects.filter(**kwargs)
+
+    combat_reports = graphene.List(
+        CombatReportType
+    )
+
+    def resolve_combat_reports(elf, info, **kwargs):
+        return CombatReport.objects.filter(**kwargs)
