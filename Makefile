@@ -17,12 +17,12 @@ crawl_ogame:
 crawl_combat_reports:
 	python manage.py crawl_forum_combat_reports --settings=invictus.settings.${ENV_REF}
 
-target: crawl_ogame run
+target: crawl_ogame crawl_combat_reports run
 
 pipe:
 	make install
 	make migrate
-	make -j2 target
+	make -j3 target
 
 shell:
 	python manage.py shell --settings=invictus.settings.${ENV_REF}
