@@ -44,7 +44,7 @@ class OgameStatsCrawler:
         )
 
         player.name = data['name']
-        print(f'Updating player: {player.player_id}:{player.name}')
+        # print(f'Updating player: {player.player_id}:{player.name}')
         player.status = status
         player.planets = CompressedDict(data['planets']).bit_string
         player.save()
@@ -58,7 +58,7 @@ class OgameStatsCrawler:
         if not created:
             return
 
-        print(f'Updating score for player: {player.player_id}:{player.name}')
+        # print(f'Updating score for player: {player.player_id}:{player.name}')
         player_id = str(player_id)
         try:
             total = highscores.total[['position', 'score']].loc[highscores.total.id == player_id].fillna(0).values[0]
@@ -120,11 +120,12 @@ class OgameStatsCrawler:
         if len(ally_data.values) < 1:
             return
 
-        print(f'Updating alliance for player: {player.player_id}:{player.name}')
+        # print(f'Updating alliance for player: {player.player_id}:{player.name}')
         try:
             ally, created = Alliance.objects.get_or_create(ally_id=int(data['alliance']['id']))
         except Exception as err:
-            print('Ally update error: ', str(err))
+            print(f'Ally {data["alliance"].get("name")} update error: {str(err)} on player {player.name}')
+            return
 
         # first row if exists
         ally_data = ally_data.values[0]
@@ -151,7 +152,6 @@ class OgameStatsCrawler:
 
         player.alliance = ally
         player.save()
-        print('Done!')
 
     @staticmethod
     def update_ally_data(ally, universe):
@@ -170,14 +170,14 @@ class OgameStatsCrawler:
         except:
             raise Exception(f'Failed retrieving members of ally: {ally.name}')
 
-        print(f'Updating alliance: {ally.name}')
+        # print(f'Updating alliance: {ally.name}')
         ally.planets_distribution_coords = CompressedDict(ally_planets).bit_string
         ally.planets_distribution_by_galaxy = CompressedDict(galaxy_distribution).bit_string
         
         ally.members.clear()
         ally.members.set(Player.objects.filter(player_id__in=ally_members))
         ally.save()
-        print(f'Updated alliance {ally.name} data!')
+        # print(f'Updated alliance {ally.name} data!')
 
     @staticmethod
     def crawl():
