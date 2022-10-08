@@ -291,8 +291,8 @@ class CombatReportType(graphene.ObjectType):
     url = graphene.String()
     winner = graphene.String()
     date = graphene.Date()
-    attackers = DynamicScalar()
-    defenders = DynamicScalar()
+    attackers_fleet = DynamicScalar()
+    defenders_fleet = DynamicScalar()
     attacker_players = graphene.List(PlayerType)
     defender_players = graphene.List(PlayerType)
 
@@ -302,10 +302,10 @@ class CombatReportType(graphene.ObjectType):
     def resolve_defender_players(self, info, **kwargs):
         return self.defender_players.all()
 
-    def resolve_attackers(self, info, **kwargs):
+    def resolve_attackers_fleet(self, info, **kwargs):
         return CompressedDict.decompress_bytes(self.attackers)
 
-    def resolve_defenders(self, info, **kwargs):
+    def resolve_defenders_fleet(self, info, **kwargs):
         return CompressedDict.decompress_bytes(self.defenders)
 
 
@@ -421,7 +421,27 @@ class Query(graphene.ObjectType):
         return Score.objects.filter(**kwargs)
 
     combat_reports = graphene.List(
-        CombatReportType
+        CombatReportType,
+        attacker_players__name__in=graphene.List(
+            graphene.String,
+            description='Filter reports by attackers player name'
+        ),
+        defender_players__name__in=graphene.List(
+            graphene.String,
+            description='Filter reports by defenders player name'
+        ),
+        title__icontains=graphene.String(
+            description='Filter reports by partial title content'
+        ),
+        date__gte=graphene.Date(
+            description='Filter reports from dates greater or equal inputed date'
+        ),
+        date__lte=graphene.Date(
+            description='Filter reports from dates lesser or equal inputed date'
+        ),
+        winner=graphene.String(
+            description='Filter reports by win result: [attackers, defenders, draw]'
+        )
     )
 
     def resolve_combat_reports(elf, info, **kwargs):
