@@ -321,7 +321,6 @@ class Query(graphene.ObjectType):
     player = graphene.Field(
         PlayerType,
         name__icontains=graphene.String(
-            required=True,
             description='Filter by player full or partial name.'
         ),
         status=graphene.String(
@@ -338,6 +337,9 @@ class Query(graphene.ObjectType):
         )
     )
     def resolve_player(self, info, **kwargs):
+        if not kwargs:
+            raise Exception('Player name or player ID is required for this filter')
+
         dt_start = kwargs.pop('datetime__gte', None)
         dt_stop = kwargs.pop('datetime__lte', None)
         try:
