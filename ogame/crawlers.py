@@ -272,6 +272,9 @@ class OgameForumCrawler:
         for text_line in message_text:
             text_line = text_line.text
 
+            if not text_line:
+                continue
+
             if OgameForumCrawler.is_noise(text_line):
                 continue
 
@@ -288,7 +291,8 @@ class OgameForumCrawler:
                 subject, name = cursor
                 ship = OgameForumCrawler.get_ship_from_text(text_line)
                 count = OgameForumCrawler.get_count(text_line)
-                combat_data[subject][name]['ships'][ship] = count
+                if ship not in combat_data[subject][name]['ships']:
+                    combat_data[subject][name]['ships'][ship] = count
 
             elif 'Defensor' in text_line:
                 defender = text_line.split('Defensor')[-1].strip()
@@ -300,13 +304,19 @@ class OgameForumCrawler:
                 subject, name = cursor
                 defense = OgameForumCrawler.get_defense_from_text(text_line)
                 count = OgameForumCrawler.get_count(text_line)
-                combat_data[subject][name]['defenses'][defense] = count
+                if defense not in combat_data[subject][name]['defenses']:
+                    combat_data[subject][name]['defenses'][defense] = count
                     
             elif 'venceu a batalha' in text_line:
                 if 'atacante' in text_line.lower():
                     combat_data['winner'] = 'attackers'
-                else:
-                    combat_data['winner'] = 'attackers'
+                elif 'defensor' in text_line.lower():
+                    combat_data['winner'] = 'defenders'
+                return combat_data
+
+            elif 'batalha terminou empatada' in text_line:
+                combat_data['winner'] = 'draw'
+                return combat_data
 
         return combat_data
 
@@ -413,7 +423,7 @@ class ForumReportText:
         'perdas',
         'perda',
         'Sumário',
-        'Conversor'
+        'Conversor',
     )
 
     SHIPS_REGEX = re.compile("|".join(SHIPS))
