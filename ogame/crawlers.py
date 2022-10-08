@@ -324,10 +324,9 @@ class OgameForumCrawler:
     @staticmethod
     def crawl():
         while True:
-            url = OgameForumCrawler.FORUM_URL
+            forum_url = OgameForumCrawler.FORUM_URL
             for page_num in range(1, 26):
-                print(f'Crawling forum page {page_num}')
-                threads = OgameForumCrawler.get_thread_list(url)
+                threads = OgameForumCrawler.get_thread_list(forum_url)
                 for thread in threads:
                     url = thread.get('url')
                     title = thread.get('title')
@@ -370,7 +369,7 @@ class OgameForumCrawler:
                     except Exception as err:
                         print(f'Failed saving report {thread.get("url")} with error {str(err)}')
                         continue
-                url = url.replace(f'pageNo={page_num}', f'pageNo={page_num+1}')
+                forum_url = forum_url.replace(f'pageNo={page_num}', f'pageNo={page_num+1}')
             sleep(3600*24)
 
 
