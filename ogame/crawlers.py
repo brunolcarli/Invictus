@@ -289,7 +289,12 @@ class OgameForumCrawler:
                     combat_data['attackers'][attacker] = {'ships': {}}
 
             elif OgameForumCrawler.is_ship(text_line):
-                subject, name = cursor
+                try:
+                    subject, name = cursor
+                except TypeError:
+                    # maybe some text mentioned a ship, ignore and continue
+                    continue
+
                 ship = OgameForumCrawler.get_ship_from_text(text_line)
                 count = OgameForumCrawler.get_count(text_line)
                 if ship not in combat_data[subject][name]['ships']:
@@ -302,7 +307,12 @@ class OgameForumCrawler:
                     combat_data['defenders'][defender] = {'ships': {}, 'defenses': {}}
 
             elif OgameForumCrawler.is_defense(text_line):
-                subject, name = cursor
+                try:
+                    subject, name = cursor
+                except TypeError:
+                    # maybe some text mentioned a defense, ignore and continue
+                    continue
+
                 defense = OgameForumCrawler.get_defense_from_text(text_line)
                 count = OgameForumCrawler.get_count(text_line)
                 if defense not in combat_data[subject][name]['defenses']:
