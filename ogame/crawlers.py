@@ -212,11 +212,12 @@ class OgameForumCrawler:
     """
     Scraps data from Ogame Forum
     """
-    FORUM_URL = 'https://forum.pt.ogame.gameforge.com/forum/board/26-relat%C3%B3rios-de-combate/?labelIDs%5B2%5D=75'
+    # FORUM_URL = 'https://forum.pt.ogame.gameforge.com/forum/board/26-relat%C3%B3rios-de-combate/?labelIDs%5B2%5D=75'
+    FORUM_URL = 'https://forum.pt.ogame.gameforge.com/forum/board/26-relat%C3%B3rios-de-combate/?pageNo=1&labelIDs%5B2%5D=75'
 
     @staticmethod
-    def get_thread_list():
-        response = requests.get(OgameForumCrawler.FORUM_URL).content
+    def get_thread_list(url):
+        response = requests.get(url).content
         main_threads_html = BeautifulSoup(response, 'html.parser')
         combat_reports = main_threads_html.findAll(class_='messageGroupLink')
         return [{'title': i.text, 'url': i.attrs.get('href')} for i in combat_reports]
@@ -323,49 +324,51 @@ class OgameForumCrawler:
     @staticmethod
     def crawl():
         while True:
-            threads = OgameForumCrawler.get_thread_list()
-            for thread in threads:
-                url = thread.get('url')
-                title = thread.get('title')
-                if not url or not title:
-                    print(f'Skipping save of thread {thread}')
-                    continue
+            for page_num in range(1, 26):
+                url = OgameForumCrawler.FORUM_URL.replace(f'pageNo={page_num}', f'pageNo={page_num}')
+                threads = OgameForumCrawler.get_thread_list(url)
+                for thread in threads:
+                    url = thread.get('url')
+                    title = thread.get('title')
+                    if not url or not title:
+                        print(f'Skipping save of thread {thread}')
+                        continue
 
-                combat_report, created = CombatReport.objects.get_or_create(
-                    title=title,
-                    url=url
-                )
-                if not created:
-                    continue
+                    combat_report, created = CombatReport.objects.get_or_create(
+                        title=title,
+                        url=url
+                    )
+                    if not created:
+                        continue
 
-                thread_html = BeautifulSoup(requests.get(url).content, 'html.parser')
-                message_text = thread_html.find(class_='messageText').findAll('p')
-                report_data = OgameForumCrawler.get_report_combat_data(message_text)
+                    thread_html = BeautifulSoup(requests.get(url).content, 'html.parser')
+                    message_text = thread_html.find(class_='messageText').findAll('p')
+                    report_data = OgameForumCrawler.get_report_combat_data(message_text)
 
-                attackers = []
-                defenders = []
-                # slice player name from [ally tag]
-                for attacker in list(report_data['attackers'].keys()):
-                    attackers.append(attacker.split('[')[0].strip())
+                    attackers = []
+                    defenders = []
+                    # slice player name from [ally tag]
+                    for attacker in list(report_data['attackers'].keys()):
+                        attackers.append(attacker.split('[')[0].strip())
 
-                for defender in list(report_data['defenders'].keys()):
-                    defenders.append(defender.split('[')[0].strip())
+                    for defender in list(report_data['defenders'].keys()):
+                        defenders.append(defender.split('[')[0].strip())
 
-                # try to retrieve players record from database
-                attacker_players = Player.objects.filter(name__in=attackers)
-                defender_players = Player.objects.filter(name__in=defenders)
+                    # try to retrieve players record from database
+                    attacker_players = Player.objects.filter(name__in=attackers)
+                    defender_players = Player.objects.filter(name__in=defenders)
 
-                try:
-                    combat_report.date = parser.parse(report_data['date'])
-                    combat_report.winner = report_data['winner']
-                    combat_report.attackers = CompressedDict(report_data['attackers']).bit_string
-                    combat_report.defenders = CompressedDict(report_data['defenders']).bit_string
-                    combat_report.attacker_players.set(attacker_players)
-                    combat_report.defender_players.set(defender_players)
-                    combat_report.save()
-                except Exception as err:
-                    print(f'Failed saving report {thread.get("url")} with error {str(err)}')
-                    continue
+                    try:
+                        combat_report.date = parser.parse(report_data['date'])
+                        combat_report.winner = report_data['winner']
+                        combat_report.attackers = CompressedDict(report_data['attackers']).bit_string
+                        combat_report.defenders = CompressedDict(report_data['defenders']).bit_string
+                        combat_report.attacker_players.set(attacker_players)
+                        combat_report.defender_players.set(defender_players)
+                        combat_report.save()
+                    except Exception as err:
+                        print(f'Failed saving report {thread.get("url")} with error {str(err)}')
+                        continue
             sleep(3600*24)
 
 
