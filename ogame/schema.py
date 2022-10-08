@@ -130,7 +130,7 @@ class PlayerType(graphene.ObjectType):
         return self.combat_report_attacker.count() + self.combat_report_defender.count()
 
     def resolve_combat_reports(self, info, **kwargs):
-        return self.combat_report_attacker.all() | self.combat_report_defender.all()
+        return (self.combat_report_attacker.all() | self.combat_report_defender.all()).distinct()
 
     def resolve_ships_count(self, info, **kwargs):
         return CompressedDict.decompress_bytes(self.score_set.last().military).get('ships', 0)
