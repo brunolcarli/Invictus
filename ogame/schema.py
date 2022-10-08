@@ -446,3 +446,31 @@ class Query(graphene.ObjectType):
 
     def resolve_combat_reports(elf, info, **kwargs):
         return CombatReport.objects.filter(**kwargs)
+
+    combat_report = graphene.Field(
+        CombatReportType,
+        attacker_players__name__in=graphene.List(
+            graphene.String,
+            description='Filter reports by attackers player name'
+        ),
+        defender_players__name__in=graphene.List(
+            graphene.String,
+            description='Filter reports by defenders player name'
+        ),
+        title__icontains=graphene.String(
+            required=True,
+            description='Filter reports by partial title content'
+        ),
+        date__gte=graphene.Date(
+            description='Filter reports from dates greater or equal inputed date'
+        ),
+        date__lte=graphene.Date(
+            description='Filter reports from dates lesser or equal inputed date'
+        ),
+        winner=graphene.String(
+            description='Filter reports by win result: [attackers, defenders, draw]'
+        )
+    )
+
+    def resolve_combat_report(elf, info, **kwargs):
+        return CombatReport.objects.get(**kwargs)
