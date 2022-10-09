@@ -96,6 +96,8 @@ def get_activity_df(player_scores):
         data, columns=['datetime', 'score'],
         index=pd.to_datetime(datetimes).tz_convert('America/Sao_Paulo').strftime('%H')
     )
+    # select rows which datetime is not NaN only
+    df = df[df['datetime'].notna()]
 
     df['datetime'] = pd.to_datetime(df['datetime']).dt.tz_convert('America/Sao_Paulo')
     df['hour'] = df['datetime'].dt.strftime('%H').astype(int)
