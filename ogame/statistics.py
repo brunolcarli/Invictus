@@ -24,4 +24,8 @@ def weekday_relative_freq(scores):
     # show only two decimals
     df['REL_FREQ_PERC'] = df['REL_FREQ_PERC'].round(2)
 
+    # order dataframe with weekdays common sequence
+    ordering = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    df = df.reindex(ordering)
+
     return df
