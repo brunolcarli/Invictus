@@ -45,7 +45,7 @@ def get_diff_df(player_scores):
 
     df[columns[1:]] = df[columns[1:]].diff().fillna(0)
     df[columns[1:]] = df[columns[1:]].clip(0)
-    df['datetime'] = pd.to_datetime(df['datetime']).dt.tz_convert('America/Sao_Paulo')
+    df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce').dt.tz_convert('America/Sao_Paulo')
 
     return df
 
@@ -67,7 +67,7 @@ def get_prediction_df(player_scores):
     offset = 11  # constant hours to forecast
     generation_freq = str(3600*offset)+'S'  # interval of future datetimes generation
 
-    df['datetime'] = pd.to_datetime(df['datetime']).dt.tz_convert('America/Sao_Paulo')
+    df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce').dt.tz_convert('America/Sao_Paulo')
     df = df.set_index('datetime')
     df['date'] = df.index.round(freq=generation_freq)
     df = df[['total', 'date']].groupby('date').mean().fillna(0)
@@ -94,12 +94,12 @@ def get_activity_df(player_scores):
     # set up dataframe indexed by dayhours
     df = pd.DataFrame(
         data, columns=['datetime', 'score'],
-        index=pd.to_datetime(datetimes).tz_convert('America/Sao_Paulo').strftime('%H')
+        index=pd.to_datetime(datetimes, errors='coerce').tz_convert('America/Sao_Paulo').strftime('%H')
     )
     # select rows which datetime is not NaN only
     df = df[df['datetime'].notna()]
 
-    df['datetime'] = pd.to_datetime(df['datetime']).dt.tz_convert('America/Sao_Paulo')
+    df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce').dt.tz_convert('America/Sao_Paulo')
     df['hour'] = df['datetime'].dt.strftime('%H').astype(int)
     df['weekday'] = df['datetime'].dt.strftime('%A')
     df['int_day'] = [day_to_int(i) for i in df.weekday.values]
