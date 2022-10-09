@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from ast import literal_eval
 from datetime import timedelta, datetime
+from pandas import DataFrame
 import pytz
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
@@ -139,7 +140,7 @@ class PlayerType(graphene.ObjectType):
         if 'scores' in self.__dict__:
             scores = self.scores
         else:
-            scores = self.score_set.all()
+            scores = self.score_set.filter(datetime__isnull=False)
         if not scores:
             return None
 
@@ -152,12 +153,18 @@ class PlayerType(graphene.ObjectType):
     def resolve_scores(self, info, **kwargs):
         if 'scores' in self.__dict__:
             return self.scores
-        return self.score_set.all()
+        return self.score_set.filter(datetime__isnull=False)
 
     def resolve_score_prediction(self, info, **kwargs):
         today = datetime.now()
         past_datetime_limit = today - timedelta(days=14)
-        scores = self.score_set.filter(datetime__gte=past_datetime_limit)
+        scores = self.score_set.filter(
+            datetime__gte=past_datetime_limit,
+            datetime__isnull=False
+        )
+        if not scores:
+            return
+
         df, future_dates = get_prediction_df(scores)
         prediction = predict_player_future_score(df, future_dates)
 
@@ -187,10 +194,13 @@ class PlayerType(graphene.ObjectType):
 
     def resolve_halfhour_mean_activity(self, info, **kwargs):
         if 'scores' in self.__dict__:
-            dataframe = get_diff_df(self.scores)
+            scores = self.scores
         else:
-            dataframe = get_diff_df(self.score_set.all())
+            scores = self.score_set.filter(datetime__isnull=False)
+        if not scores:
+            return
 
+        dataframe = get_diff_df(scores)
         dataframe = dataframe.set_index(dataframe.datetime)
         dataframe['halfhour'] = dataframe.index.round(freq='1800S').strftime('%H:'+'%M')
         dataframe = dataframe[['total', 'halfhour']].groupby('halfhour').mean().fillna(0)
@@ -198,10 +208,13 @@ class PlayerType(graphene.ObjectType):
     
     def resolve_hour_mean_activity(self, info, **kwargs):
         if 'scores' in self.__dict__:
-            dataframe = get_diff_df(self.scores)
+            scores = self.scores
         else:
-            dataframe = get_diff_df(self.score_set.all())
+            scores = self.score_set.filter(datetime__isnull=False)
+        if not scores:
+            return
 
+        dataframe = get_diff_df(scores)
         dataframe = dataframe.set_index(dataframe.datetime)
         dataframe['hour'] = dataframe.index.round(freq='3600S').strftime('%H:'+'%M')
         dataframe = dataframe[['total', 'hour']].groupby('hour').mean().fillna(0)
@@ -209,10 +222,13 @@ class PlayerType(graphene.ObjectType):
 
     def resolve_weekday_mean_activity(self, info, **kwargs):
         if 'scores' in self.__dict__:
-            dataframe = get_diff_df(self.scores)
+            scores = self.scores
         else:
-            dataframe = get_diff_df(self.score_set.all())
+            scores = self.score_set.filter(datetime__isnull=False)
+        if not scores:
+            return
 
+        dataframe = get_diff_df(scores)
         dataframe = dataframe.set_index(dataframe.datetime)
         dataframe['weekday'] = dataframe.index.strftime('%A')
         dataframe = dataframe[['total', 'weekday']].groupby('weekday').mean().fillna(0)
@@ -235,10 +251,13 @@ class PlayerType(graphene.ObjectType):
 
     def resolve_score_diff(self, info, **kwargs):
         if 'scores' in self.__dict__:
-            dataframe = get_diff_df(self.scores)
+            scores = self.scores
         else:
-            dataframe = get_diff_df(self.score_set.all())
+            scores = self.score_set.filter(datetime__isnull=False)
+        if not scores:
+            return
 
+        dataframe = get_diff_df(scores)
         return [ScoreDiffType(*row) for row in dataframe.values[1:]]
 
 
@@ -352,19 +371,22 @@ class Query(graphene.ObjectType):
 
         if dt_start and dt_stop is None:
             player.scores = player.score_set.filter(
-                datetime__gte=dt_start.astimezone(pytz.timezone('UTC'))
+                datetime__gte=dt_start.astimezone(pytz.timezone('UTC')),
+                datetime__isnull=False
             )
             return player
         
         if dt_start is None and dt_stop:
             player.scores = player.score_set.filter(
-                datetime__lte=dt_stop.astimezone(pytz.timezone('UTC'))
+                datetime__lte=dt_stop.astimezone(pytz.timezone('UTC')),
+                datetime__isnull=False
             )
             return player
 
         player.scores = player.score_set.filter(
             datetime__gte=dt_start.astimezone(pytz.timezone('UTC')),
-            datetime__lte=dt_stop.astimezone(pytz.timezone('UTC'))
+            datetime__lte=dt_stop.astimezone(pytz.timezone('UTC')),
+            datetime__isnull=False
         )
         return player
 
@@ -401,7 +423,8 @@ class Query(graphene.ObjectType):
 
         for player in players:
             player.scores = player.score_set.filter(
-                datetime__gte=dt_start.astimezone(pytz.timezone('UTC'))
+                datetime__gte=dt_start.astimezone(pytz.timezone('UTC')),
+                datetime__isnull=False
             )
 
         return players
@@ -428,6 +451,7 @@ class Query(graphene.ObjectType):
     scores = graphene.List(ScoreType)
 
     def resolve_scores(self, info, **kwargs):
+        kwargs['datetime__isnull'] = False
         return Score.objects.filter(**kwargs)
 
     combat_reports = graphene.List(
