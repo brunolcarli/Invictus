@@ -35,7 +35,7 @@ def weekday_relative_freq(scores):
     return df
 
 
-def halfhour_relative_freq(scores):
+def hour_relative_freq(scores, period):
     data = []
     for score in scores:
         dt = score.datetime.astimezone(pytz.timezone('America/Sao_Paulo'))
@@ -47,7 +47,7 @@ def halfhour_relative_freq(scores):
     df = df.set_index(df['DATETIME'])
 
     # get rounded time by 30 minutes
-    df['HALFHOUR'] = df.index.round(freq='1800S').strftime('%H:'+'%M')
+    df['HALFHOUR'] = df.index.round(freq=period).strftime('%H:'+'%M')
     # calculate score difference
     df['DIFF'] = df.TOTAL.diff().fillna(0)
     # group diff sums by time

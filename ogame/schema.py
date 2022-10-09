@@ -1,14 +1,13 @@
 from collections import OrderedDict
 from ast import literal_eval
 from datetime import timedelta, datetime
-from pandas import DataFrame
 import pytz
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance, PastScorePrediction, Score, CombatReport
 from ogame.util import get_diff_df, get_prediction_df, get_future_activity
 from ogame.forecast import predict_player_future_score
-from ogame.statistics import weekday_relative_freq, halfhour_relative_freq
+from ogame.statistics import weekday_relative_freq, hour_relative_freq
 
 
 class PlanetType(graphene.ObjectType):
@@ -139,6 +138,21 @@ class PlayerType(graphene.ObjectType):
     combat_reports = graphene.List('ogame.schema.CombatReportType')
     weekday_relative_frequency = graphene.Field(WeekdayRelativeFrequency)
     halfhour_relative_frequency = graphene.Field(HourRelativeFrequency)
+    hour_relative_frequency = graphene.Field(HourRelativeFrequency)
+
+    def resolve_hour_relative_frequency(self, info, **kwargs):
+        if 'scores' in self.__dict__:
+            scores = self.scores
+        else:
+            scores = self.score_set.filter(datetime__isnull=False)
+        if not scores:
+            return None
+
+        rel_freq = hour_relative_freq(scores, '3600S')
+        return HourRelativeFrequency(
+            hours=rel_freq.index.values,
+            relative_frequency=rel_freq.REL_FREQ_PERC.values
+        )
 
     def resolve_halfhour_relative_frequency(self, info, **kwargs):
         if 'scores' in self.__dict__:
@@ -148,7 +162,7 @@ class PlayerType(graphene.ObjectType):
         if not scores:
             return None
 
-        rel_freq = halfhour_relative_freq(scores)
+        rel_freq = hour_relative_freq(scores, '1800S')
         return HourRelativeFrequency(
             hours=rel_freq.index.values,
             relative_frequency=rel_freq.REL_FREQ_PERC.values
