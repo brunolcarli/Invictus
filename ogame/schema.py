@@ -8,6 +8,7 @@ from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance, PastScorePrediction, Score, CombatReport
 from ogame.util import get_diff_df, get_prediction_df, get_future_activity
 from ogame.forecast import predict_player_future_score
+from ogame.statistics import weekday_relative_freq
 
 
 class PlanetType(graphene.ObjectType):
@@ -42,6 +43,11 @@ class HourMeanActivity(graphene.ObjectType):
 class WeekdayMeanActivity(graphene.ObjectType):
     weekdays = graphene.List(graphene.String)
     average_progress = graphene.List(graphene.Float)
+
+
+class WeekdayRelativeFrequency(graphene.ObjectType):
+    weekdays = graphene.List(graphene.String)
+    relative_frequency = graphene.List(graphene.Float)
 
 
 class ScoreDiffType(graphene.ObjectType):
@@ -126,6 +132,21 @@ class PlayerType(graphene.ObjectType):
     ships_count = graphene.Int()
     combat_reports_count = graphene.Int()
     combat_reports = graphene.List('ogame.schema.CombatReportType')
+    weekday_relative_frequency = graphene.Field(WeekdayRelativeFrequency)
+
+    def resolve_weekday_relative_frequency(self, info, **kwargs):
+        if 'scores' in self.__dict__:
+            scores = self.scores
+        else:
+            scores = self.score_set.filter(datetime__isnull=False)
+        if not scores:
+            return None
+
+        rel_freq = weekday_relative_freq(scores)
+        return WeekdayRelativeFrequency(
+            weekdays=list(rel_freq.index.values),
+            relative_frequency=list(rel_freq.REL_FREQ_PERC.values)
+        )
 
     def resolve_combat_reports_count(self, info, **kwargs):
         return self.combat_report_attacker.count() + self.combat_report_defender.count()
