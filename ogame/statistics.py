@@ -46,7 +46,7 @@ def weekday_relative_freq(scores):
     df['VAR'] = df['VAR'].clip(0)
     df['STD'] = df['STD'].clip(0)
 
-    return df
+    return df.fillna(0)
 
 
 def hour_relative_freq(scores, period):
@@ -89,4 +89,4 @@ def hour_relative_freq(scores, period):
     df['VAR'] = df['VAR'].clip(0)
     df['STD'] = df['STD'].clip(0)
 
-    return df
+    return df.fillna(0)
