@@ -47,15 +47,11 @@ class WeekdayMeanActivity(graphene.ObjectType):
 class HourRelativeFrequency(graphene.ObjectType):
     hours = graphene.List(graphene.String)
     relative_frequency = graphene.List(graphene.Float)
-    variance = graphene.List(graphene.Float)
-    std_deviation = graphene.List(graphene.Float)
 
 
 class WeekdayRelativeFrequency(graphene.ObjectType):
     weekdays = graphene.List(graphene.String)
     relative_frequency = graphene.List(graphene.Float)
-    variance = graphene.List(graphene.Float)
-    std_deviation = graphene.List(graphene.Float)
 
 
 class ScoreDiffType(graphene.ObjectType):
@@ -156,8 +152,6 @@ class PlayerType(graphene.ObjectType):
         return HourRelativeFrequency(
             hours=rel_freq.index.values,
             relative_frequency=rel_freq.REL_FREQ.values,
-            variance=rel_freq.VAR.values,
-            std_deviation=rel_freq.STD.values
         )
 
     def resolve_halfhour_relative_frequency(self, info, **kwargs):
@@ -172,8 +166,6 @@ class PlayerType(graphene.ObjectType):
         return HourRelativeFrequency(
             hours=rel_freq.index.values,
             relative_frequency=rel_freq.REL_FREQ.values,
-            variance=rel_freq.VAR.values,
-            std_deviation=rel_freq.STD.values
         )
 
     def resolve_weekday_relative_frequency(self, info, **kwargs):
