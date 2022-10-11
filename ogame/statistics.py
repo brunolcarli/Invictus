@@ -112,6 +112,10 @@ def fleet_relative_freq(player):
         if i not in counts:
             counts[i] = 0
 
+    # avoid zero division error
+    if not fleet:
+        fleet.append(1)
+
     data = []
     for int_ship, usage in counts.items():
         data.append([int2ship[int_ship], (usage/len(fleet)) * 100])
