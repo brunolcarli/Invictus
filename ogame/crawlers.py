@@ -188,6 +188,11 @@ class OgameStatsCrawler:
             for player_id, player_name, status in universe.players[['id', 'name', 'status']].values:
                 try:
                     data = universe.get_player_data(player_name)
+                except ogame_stats.utils.xmltodict.expat.ExpatError:
+                    #  third party lib error, skip
+                    continue
+
+                try:
                     OgameStatsCrawler.update_player_data(
                         data['playerData'],
                         player_id,
@@ -198,6 +203,7 @@ class OgameStatsCrawler:
                 except Exception as err:
                     print(f'Crawling Error: Failed updating player {player_name} with error: {str(err)}')
                     continue
+                    
             
             for alliance in Alliance.objects.all():
                 try:
@@ -205,6 +211,7 @@ class OgameStatsCrawler:
                 except Exception as err:
                     print(f'CrawlingError: Failed updating alliance {alliance.name} with error: {str(err)}')
                     continue
+
             sleep(3600*2)
 
 
