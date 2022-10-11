@@ -213,7 +213,10 @@ class PlayerType(graphene.ObjectType):
         return OrderedDict({i: list(preds[i].values) for i in preds.columns})
 
     def resolve_planets_count(self, info, **kwargs):
-        return len(CompressedDict.decompress_bytes(self.planets).get('planet', []))
+        planets = CompressedDict.decompress_bytes(self.planets).get('planet', [])
+        if isinstance(planets, dict):
+            return 1
+        return len(planets)
 
     def resolve_scores(self, info, **kwargs):
         if 'scores' in self.__dict__:
@@ -304,8 +307,12 @@ class PlayerType(graphene.ObjectType):
 
     def resolve_planets(self, info, **kwargs):
         data = CompressedDict.decompress_bytes(self.planets).get('planet', [])
-        if not isinstance(data, list):
+        if not data:
             return None
+        if isinstance(data, dict):
+            coords = data['coords'].split(':')
+            coords.append(data['name'])
+            return [PlanetType(*coords)]
         planets = []
         for planet in data:
             coords = planet['coords'].split(':')
