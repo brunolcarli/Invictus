@@ -7,7 +7,7 @@ from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance, PastScorePrediction, Score, CombatReport
 from ogame.util import get_prediction_df, get_future_activity
 from ogame.forecast import predict_player_future_score
-from ogame.statistics import weekday_relative_freq, hour_relative_freq
+from ogame.statistics import weekday_relative_freq, hour_relative_freq, fleet_relative_freq
 
 
 class PlanetType(graphene.ObjectType):
@@ -110,6 +110,10 @@ class PlayerType(graphene.ObjectType):
     weekday_relative_frequency = graphene.Field(WeekdayRelativeFrequency)
     halfhour_relative_frequency = graphene.Field(HourRelativeFrequency)
     hour_relative_frequency = graphene.Field(HourRelativeFrequency)
+    fleet_relative_frequency = DynamicScalar()
+
+    def resolve_fleet_relative_frequency(self, info, **kwargs):
+        return fleet_relative_freq(self).to_dict()['FREQ']
 
     def resolve_hour_relative_frequency(self, info, **kwargs):
         if 'scores' in self.__dict__:
@@ -320,6 +324,7 @@ class CombatReportType(graphene.ObjectType):
 
     def resolve_defenders_fleet(self, info, **kwargs):
         return CompressedDict.decompress_bytes(self.defenders)
+
 
 
 class Query(graphene.ObjectType):

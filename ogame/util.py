@@ -5,6 +5,47 @@ import pytz
 from ogame.types import CompressedDict
 
 
+def fleet_mapping():
+    ships_to_int = {
+        'Light Fighter:': 1,
+        'Caça Ligeiro': 1,
+        'Heavy Fighter': 2,
+        'Caça Pesado': 2,
+        'Cruiser': 3,
+        'Cruzador': 3,
+        'Battleship': 4,
+        'Nave de Batalha': 4,
+        'Battlecruiser': 5,
+        'Interceptor': 5,
+        'Interceptador': 5,
+        'Destroyer': 6,
+        'Destruidor': 6,
+        'EDM': 7,
+        'Death Star': 7,
+        'Deathstar': 7,
+        'Estrela da Morte': 7,
+        'Bomber': 8,
+        'Bombardeiro': 8,
+        'Ceifeira': 9,
+        'Reaper': 9,
+        'Explorador': 10,
+        'Pathfinder': 10,
+        'Small Cargo': 11,
+        'Cargueiro Pequeno': 11,
+        'Large Cargo': 12,
+        'Cargueiro Grande': 12,
+        'Colony Ship': 13,
+        'Nave de Colonização': 13,
+        'Nave Colonizadora': 13,
+        'Recycler': 14,
+        'Reciclador': 14,
+        'Espionage Probe': 15,
+        'Sonda de Espionagem': 15,
+    }
+    int_to_ships = {v:k for k, v in ships_to_int.items()}
+    return ships_to_int, int_to_ships
+
+
 def day_to_int(weekday):
     conversion_table = {
         'Monday': 1,

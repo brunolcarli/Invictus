@@ -1,6 +1,8 @@
+from collections import Counter
 import pandas as pd
 import pytz
 from ogame.types import CompressedDict
+from ogame.util import fleet_mapping
 
 
 def weekday_relative_freq(scores):
@@ -81,3 +83,37 @@ def hour_relative_freq(scores, period):
     df['NEG_STD'] = df['NEG_STD'].round(2)
 
     return df.fillna(0)
+
+
+def fleet_relative_freq(player):
+    ship2int, int2ship = fleet_mapping()
+    attack_instance = player.combat_report_attacker.all()
+    defense_instance  = player.combat_report_defender.all()
+
+    fleet = []
+    for report in attack_instance:
+        data = CompressedDict.decompress_bytes(report.attackers)
+        for attacker in data:
+            if player.name in attacker:
+                for ship in data[attacker]['ships']:
+                    fleet.append(ship2int[ship])
+                break
+
+    for report in defense_instance:
+        data = CompressedDict.decompress_bytes(report.defenders)
+        for defender in data:
+            if player.name in defender:
+                for ship in data[defender]['ships']:
+                    fleet.append(ship2int[ship])
+                break
+
+    counts = Counter(fleet)
+    for i in int2ship.keys():
+        if i not in counts:
+            counts[i] = 0
+
+    data = []
+    for int_ship, usage in counts.items():
+        data.append([int2ship[int_ship], (usage/len(fleet)) * 100])
+    df = pd.DataFrame(data, columns=['SHIP', 'FREQ']).round(2)
+    return df.set_index('SHIP')
