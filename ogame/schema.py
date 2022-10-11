@@ -5,7 +5,7 @@ import pytz
 import graphene
 from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance, PastScorePrediction, Score, CombatReport
-from ogame.util import get_diff_df, get_prediction_df, get_future_activity
+from ogame.util import get_prediction_df, get_future_activity
 from ogame.forecast import predict_player_future_score
 from ogame.statistics import weekday_relative_freq, hour_relative_freq
 
@@ -34,16 +34,6 @@ class ScorePrediction(graphene.ObjectType):
     last_predictions = graphene.Field(LastScorePredictionType)
 
 
-class HourMeanActivity(graphene.ObjectType):
-    hours = graphene.List(graphene.String)
-    average_progress = graphene.List(graphene.Float)
-
-
-class WeekdayMeanActivity(graphene.ObjectType):
-    weekdays = graphene.List(graphene.String)
-    average_progress = graphene.List(graphene.Float)
-
-
 class HourRelativeFrequency(graphene.ObjectType):
     hours = graphene.List(graphene.String)
     relative_frequency = graphene.List(graphene.Float)
@@ -56,25 +46,6 @@ class WeekdayRelativeFrequency(graphene.ObjectType):
     relative_frequency = graphene.List(graphene.Float)
     high_std = graphene.List(graphene.Float)
     low_std = graphene.List(graphene.Float)
-
-
-class ScoreDiffType(graphene.ObjectType):
-    datetime = graphene.DateTime()
-    total = graphene.Float()
-    economy = graphene.Float()
-    research = graphene.Float()
-    military = graphene.Float()
-    ships = graphene.Float()
-    military_built = graphene.Float()
-    military_destroyed = graphene.Float()
-    military_lost = graphene.Float()
-    honor = graphene.Float()
-
-    def resolve_datetime(self, info, **kwargs):
-        try:
-            return self.datetime.astimezone(pytz.timezone('America/Sao_Paulo'))
-        except Exception as err:
-            print(f'FieldResolverError: Failed to resolve field with error: {str(err)}')
 
 
 class ScoreType(graphene.ObjectType):
@@ -129,10 +100,6 @@ class PlayerType(graphene.ObjectType):
     scores = graphene.List(ScoreType)
     alliance = graphene.Field('ogame.schema.AllianceType')
     alliances_founded = graphene.List('ogame.schema.AllianceType')
-    score_diff = graphene.List(ScoreDiffType)
-    weekday_mean_activity = graphene.Field(WeekdayMeanActivity)
-    hour_mean_activity = graphene.Field(HourMeanActivity)
-    halfhour_mean_activity = graphene.Field(HourMeanActivity)
     score_prediction = graphene.Field(ScorePrediction)
     activity_prediction = DynamicScalar()
     planets_count = graphene.Int()
@@ -260,48 +227,6 @@ class PlayerType(graphene.ObjectType):
             CompressedDict.decompress_bytes(last_prediction.prediction)
         ])
 
-    def resolve_halfhour_mean_activity(self, info, **kwargs):
-        if 'scores' in self.__dict__:
-            scores = self.scores
-        else:
-            scores = self.score_set.filter(datetime__isnull=False)
-        if not scores:
-            return
-
-        dataframe = get_diff_df(scores)
-        dataframe = dataframe.set_index(dataframe.datetime)
-        dataframe['halfhour'] = dataframe.index.round(freq='1800S').strftime('%H:'+'%M')
-        dataframe = dataframe[['total', 'halfhour']].groupby('halfhour').mean().fillna(0)
-        return HourMeanActivity(*[dataframe.index.values, dataframe.total.values])
-    
-    def resolve_hour_mean_activity(self, info, **kwargs):
-        if 'scores' in self.__dict__:
-            scores = self.scores
-        else:
-            scores = self.score_set.filter(datetime__isnull=False)
-        if not scores:
-            return
-
-        dataframe = get_diff_df(scores)
-        dataframe = dataframe.set_index(dataframe.datetime)
-        dataframe['hour'] = dataframe.index.round(freq='3600S').strftime('%H:'+'%M')
-        dataframe = dataframe[['total', 'hour']].groupby('hour').mean().fillna(0)
-        return HourMeanActivity(*[dataframe.index.values, dataframe.total.values])
-
-    def resolve_weekday_mean_activity(self, info, **kwargs):
-        if 'scores' in self.__dict__:
-            scores = self.scores
-        else:
-            scores = self.score_set.filter(datetime__isnull=False)
-        if not scores:
-            return
-
-        dataframe = get_diff_df(scores)
-        dataframe = dataframe.set_index(dataframe.datetime)
-        dataframe['weekday'] = dataframe.index.strftime('%A')
-        dataframe = dataframe[['total', 'weekday']].groupby('weekday').mean().fillna(0)
-        return WeekdayMeanActivity(*[dataframe.index.values, dataframe.total.values])
-
     def resolve_alliances_founded(self, info, **kwargs):
         return Alliance.objects.filter(founder__player_id=self.player_id)
 
@@ -320,17 +245,6 @@ class PlayerType(graphene.ObjectType):
             planets.append(coords)
 
         return [PlanetType(*planet) for planet in planets]
-
-    def resolve_score_diff(self, info, **kwargs):
-        if 'scores' in self.__dict__:
-            scores = self.scores
-        else:
-            scores = self.score_set.filter(datetime__isnull=False)
-        if not scores:
-            return
-
-        dataframe = get_diff_df(scores)
-        return [ScoreDiffType(*row) for row in dataframe.values[1:]]
 
 
 class AllianceType(graphene.ObjectType):
