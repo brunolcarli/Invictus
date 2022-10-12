@@ -7,7 +7,8 @@ from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance, PastScorePrediction, Score, CombatReport
 from ogame.util import get_prediction_df, get_future_activity
 from ogame.forecast import predict_player_future_score
-from ogame.statistics import weekday_relative_freq, hour_relative_freq, fleet_relative_freq
+from ogame.statistics import (weekday_relative_freq, hour_relative_freq,
+                              fleet_relative_freq, universe_fleet_relative_freq)
 
 
 class PlanetType(graphene.ObjectType):
@@ -346,7 +347,11 @@ class CombatReportType(graphene.ObjectType):
         return CompressedDict.decompress_bytes(self.defenders)
 
 
-
+############################################
+#
+#                 QUERY
+#
+############################################
 class Query(graphene.ObjectType):
     player = graphene.Field(
         PlayerType,
@@ -366,6 +371,7 @@ class Query(graphene.ObjectType):
             description='Filter player score collected on greater or equal inputed datetime.'
         )
     )
+
     def resolve_player(self, info, **kwargs):
         if not kwargs:
             raise Exception('Player name or player ID is required for this filter')
@@ -458,7 +464,6 @@ class Query(graphene.ObjectType):
     def resolve_alliance(self, info, **kwargs):
         return Alliance.objects.get(**kwargs)
 
-
     scores = graphene.List(ScoreType)
 
     def resolve_scores(self, info, **kwargs):
@@ -489,7 +494,7 @@ class Query(graphene.ObjectType):
         )
     )
 
-    def resolve_combat_reports(elf, info, **kwargs):
+    def resolve_combat_reports(self, info, **kwargs):
         return CombatReport.objects.filter(**kwargs)
 
     combat_report = graphene.Field(
@@ -517,5 +522,10 @@ class Query(graphene.ObjectType):
         )
     )
 
-    def resolve_combat_report(elf, info, **kwargs):
+    def resolve_combat_report(self, info, **kwargs):
         return CombatReport.objects.get(**kwargs)
+
+    universe_fleet_relative_frequency = DynamicScalar()
+
+    def resolve_universe_fleet_relative_frequency(self, info, **kwargs):
+        return universe_fleet_relative_freq(CombatReport.objects.all()).to_dict()['FREQ']

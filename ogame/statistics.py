@@ -127,3 +127,40 @@ def fleet_relative_freq(player):
         data.append([int2ship[int_ship], (usage/len(fleet)) * 100])
     df = pd.DataFrame(data, columns=['SHIP', 'FREQ']).round(2)
     return df.set_index('SHIP').sort_index()
+
+
+def universe_fleet_relative_freq(reports):
+    ship2int, int2ship = fleet_mapping()
+
+    fleet = []
+    for report in reports:
+        data = CompressedDict.decompress_bytes(report.attackers)
+        for attacker in data:
+            for ship in data[attacker]['ships']:
+                try:
+                    fleet.append(ship2int[ship])
+                except KeyError:
+                    continue
+
+        data = CompressedDict.decompress_bytes(report.defenders)
+        for defender in data:
+            for ship in data[defender]['ships']:
+                try:
+                    fleet.append(ship2int[ship])
+                except KeyError:
+                    continue
+
+    counts = Counter(fleet)
+    for i in int2ship.keys():
+        if i not in counts:
+            counts[i] = 0
+
+    # avoid zero division error
+    if not fleet:
+        fleet.append(1)
+
+    data = []
+    for int_ship, usage in counts.items():
+        data.append([int2ship[int_ship], (usage/len(fleet)) * 100])
+    df = pd.DataFrame(data, columns=['SHIP', 'FREQ']).round(2)
+    return df.set_index('SHIP').sort_index()
