@@ -96,7 +96,10 @@ def fleet_relative_freq(player):
         for attacker in data:
             if player.name in attacker:
                 for ship in data[attacker]['ships']:
-                    fleet.append(ship2int[ship])
+                    try:
+                        fleet.append(ship2int[ship])
+                    except KeyError:
+                        continue
                 break
 
     for report in defense_instance:
@@ -104,7 +107,10 @@ def fleet_relative_freq(player):
         for defender in data:
             if player.name in defender:
                 for ship in data[defender]['ships']:
-                    fleet.append(ship2int[ship])
+                    try:
+                        fleet.append(ship2int[ship])
+                    except KeyError:
+                        continue
                 break
 
     counts = Counter(fleet)
@@ -120,4 +126,4 @@ def fleet_relative_freq(player):
     for int_ship, usage in counts.items():
         data.append([int2ship[int_ship], (usage/len(fleet)) * 100])
     df = pd.DataFrame(data, columns=['SHIP', 'FREQ']).round(2)
-    return df.set_index('SHIP')
+    return df.set_index('SHIP').sort_index()

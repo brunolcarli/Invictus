@@ -266,6 +266,26 @@ class AllianceType(graphene.ObjectType):
     players_count = graphene.Int()
     planets_count = graphene.Int()
     ships_count = graphene.Int()
+    fleet_relative_frequency = DynamicScalar()
+
+    def resolve_fleet_relative_frequency(self, info, **kwargs):
+        members = self.members.all()
+        if not members.exists():
+            return {}
+        df = fleet_relative_freq(members[0])
+        if members.count() < 2:
+            return df.to_dict()['FREQ']
+
+        count = 1 if df['FREQ'].sum() > 0 else 0
+
+        for member in members[1:]:
+            member_freq = fleet_relative_freq(member)
+            if member_freq['FREQ'].sum() > 0:
+                count += 1
+                df['FREQ'] += member_freq['FREQ']
+
+        df['FREQ'] = df['FREQ'] / count
+        return df.round(2).to_dict()['FREQ']
 
     def resolve_ships_count(self, info, **kwargs):
         members = self.members.all()
