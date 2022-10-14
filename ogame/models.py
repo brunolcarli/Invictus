@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class Player(models.Model):
@@ -65,10 +66,20 @@ class CombatReport(models.Model):
     attacker_players = models.ManyToManyField(Player, related_name='combat_report_attacker')
     defender_players = models.ManyToManyField(Player, related_name='combat_report_defender')
 
-# class ActivityPredictionHistory(models.Model):
-#     player = models.ForeignKey(Player, on_delete=models.CASCADE)
-#     start_date = models.DateField(null=True)
-#     end_date = models.DateField(null=True)
-#     predicted = models.BinaryField(null=True)
-#     groundtruth = models.BinaryField(null=True)
 
+class FleetRecord(models.Model):
+    datetime = models.DateTimeField(null=True)
+    player = models.ForeignKey(
+        Player,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name='player_fleet_record'
+    )
+    recorded_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name='recorded_by_user'
+    )
+    fleet = models.BinaryField(null=True)
+    coord = models.CharField(max_length=10, null=True, blank=True)
