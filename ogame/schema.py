@@ -3,12 +3,23 @@ from ast import literal_eval
 from datetime import timedelta, datetime
 import pytz
 import graphene
+from graphene_django import DjangoObjectType
+from django.contrib.auth import get_user_model
 from ogame.types import DynamicScalar, CompressedDict
-from ogame.models import Player, Alliance, PastScorePrediction, Score, CombatReport
-from ogame.util import get_prediction_df, get_future_activity
+from ogame.models import Player, Alliance, PastScorePrediction, Score, CombatReport, FleetRecord
+from ogame.util import get_prediction_df, get_future_activity, FleetHashMap
 from ogame.forecast import predict_player_future_score
 from ogame.statistics import (weekday_relative_freq, hour_relative_freq,
                               fleet_relative_freq, universe_fleet_relative_freq)
+from ogame.auth import access_required
+
+
+class UserType(DjangoObjectType):
+    """
+    Modelo de usuário padrão do django
+    """ 
+    class Meta:
+        model = get_user_model()
 
 
 class PlanetType(graphene.ObjectType):
@@ -347,6 +358,23 @@ class CombatReportType(graphene.ObjectType):
         return CompressedDict.decompress_bytes(self.defenders)
 
 
+class FleetRecordType(graphene.ObjectType):
+    datetime = graphene.DateTime()
+    player = graphene.Field(PlayerType)
+    recorded_by = graphene.Field(UserType)
+    fleet = DynamicScalar()
+    coord = graphene.String()
+
+    def resolve_fleet(self, info, **kwargs):
+        return CompressedDict.decompress_bytes(self.fleet)
+
+    def resolve_datetime(self, info, **kwargs):
+        try:
+            return self.datetime.astimezone(pytz.timezone('America/Sao_Paulo'))
+        except Exception as err:
+            print(f'FieldResolverError: Failed to resolve field with error: {str(err)}')
+
+
 ############################################
 #
 #                 QUERY
@@ -529,3 +557,58 @@ class Query(graphene.ObjectType):
 
     def resolve_universe_fleet_relative_frequency(self, info, **kwargs):
         return universe_fleet_relative_freq(CombatReport.objects.all()).to_dict()['FREQ']
+
+    fleet_records = graphene.List(FleetRecordType)
+
+    def resolve_fleet_records(self, info, **kwargs):
+        return FleetRecord.objects.filter(**kwargs)
+
+
+############################################
+#
+#                 MUTATIONS
+#
+############################################
+
+class CreateFleetRecord(graphene.relay.ClientIDMutation):
+    fleet_record = graphene.Field(FleetRecordType)
+
+    class Input:
+        player_id = graphene.Int(required=True)
+        coord = graphene.String()
+        fleet = DynamicScalar(required=True)
+        username = graphene.String(required=True)
+
+    @access_required
+    def mutate_and_get_payload(self, info, **kwargs):
+        dt = datetime.now()
+        coord = kwargs.get('coord')
+        player_id = kwargs['player_id']
+        fleet = kwargs['fleet']
+
+        try:
+            player = Player.objects.get(player_id=player_id)
+        except Player.DoesNotExist:
+            raise Exception(f'Player with id {player_id} was not found!')
+
+        fleet_eval = FleetHashMap()
+        if not fleet_eval.validate_input_keys(fleet.keys()):
+            raise Exception('Invalid ship inputed on fleet data!')
+
+        fleet = fleet_eval.convert_input_keys(fleet)
+        user = get_user_model().objects.get(username=kwargs['username'])
+
+        record = FleetRecord.objects.create(
+            datetime=dt,
+            coord=coord,
+            player=player,
+            fleet=CompressedDict(fleet).bit_string,
+            recorded_by=user
+        )
+        record.save()
+
+        return CreateFleetRecord(record)
+
+
+class Mutation:
+    create_fleet_record = CreateFleetRecord.Field()
