@@ -319,7 +319,7 @@ class AllianceType(graphene.ObjectType):
 
     def resolve_found_date(self, info, **kwargs):
         try:
-            return self.datetime.astimezone(pytz.timezone('America/Sao_Paulo'))
+            return self.found_date.astimezone(pytz.timezone('America/Sao_Paulo'))
         except Exception as err:
             print(f'FieldResolverError: Failed to resolve field with error: {str(err)}')
 
