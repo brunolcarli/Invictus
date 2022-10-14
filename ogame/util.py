@@ -5,9 +5,36 @@ import pytz
 from ogame.types import CompressedDict
 
 
+class FleetHashMap:
+    def __init__(self):
+        self.available_ships = {
+            'LIGHT_FIGHTER': 'Light Fighter',
+            'HEAVY_FIGHTER': 'Heavy Fighter',
+            'CRUISER': 'Cruiser',
+            'BATTLESHIP': 'Battleship',
+            'BATTLECRUISER': 'Battlecruiser',
+            'DESTROYER': 'Destroyer',
+            'DEATHSTAR': 'Deathstar',
+            'BOMBER': 'Bomber',
+            'REAPER': 'Reaper',
+            'PATHFINDER': 'Pathfinder',
+            'SMALL_CARGO': 'Small Cargo',
+            'LARGE_CARGO': 'Large Cargo',
+            'COLONY_SHIP': 'Colony Ship',
+            'RECYCLER': 'Recycler',
+            'ESPIONAGE_PROBE': 'Espionage Probe',
+        }
+
+    def validate_input_keys(self, keys):
+        return all(k in self.available_ships for k in keys)
+
+    def convert_input_keys(self, data):
+        return {self.available_ships[k]: v for k, v in data.items()}
+
+
 def fleet_mapping():
     ships_to_int = {
-        'Light Fighter:': 1,
+        'Light Fighter': 1,
         'Caça Ligeiro': 1,
         'Heavy Fighter': 2,
         'Caça Pesado': 2,
