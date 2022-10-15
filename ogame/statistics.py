@@ -138,7 +138,7 @@ def fleet_relative_freq(player):
     return df.set_index('SHIP').sort_index()
 
 
-def universe_fleet_relative_freq(reports):
+def universe_fleet_relative_freq(reports, fleet_records):
     ship2int, int2ship = fleet_mapping()
 
     fleet = []
@@ -158,6 +158,14 @@ def universe_fleet_relative_freq(reports):
                     fleet.append(ship2int[ship])
                 except KeyError:
                     continue
+
+    for record in fleet_records:
+        data = CompressedDict.decompress_bytes(record.fleet)
+        for ship in data.keys():
+            try:
+                fleet.append(ship2int[ship])
+            except KeyError:
+                continue
 
     counts = Counter(fleet)
     for i in int2ship.keys():

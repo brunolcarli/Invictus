@@ -555,7 +555,11 @@ class Query(graphene.ObjectType):
     universe_fleet_relative_frequency = DynamicScalar()
 
     def resolve_universe_fleet_relative_frequency(self, info, **kwargs):
-        return universe_fleet_relative_freq(CombatReport.objects.all()).to_dict()['FREQ']
+        result =  universe_fleet_relative_freq(
+            CombatReport.objects.all(),
+            FleetRecord.objects.all()
+        )
+        return result.to_dict()['FREQ']
 
     fleet_records = graphene.List(FleetRecordType)
 
