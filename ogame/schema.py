@@ -3,7 +3,6 @@ from ast import literal_eval
 from datetime import timedelta, datetime
 import pytz
 import graphene
-from graphene_django import DjangoObjectType
 from django.contrib.auth import get_user_model
 from ogame.types import DynamicScalar, CompressedDict
 from ogame.models import Player, Alliance, PastScorePrediction, Score, CombatReport, FleetRecord
@@ -119,6 +118,10 @@ class PlayerType(graphene.ObjectType):
     halfhour_relative_frequency = graphene.Field(HourRelativeFrequency)
     hour_relative_frequency = graphene.Field(HourRelativeFrequency)
     fleet_relative_frequency = DynamicScalar()
+    fleet_records = graphene.List('ogame.schema.FleetRecordType')
+
+    def resolve_fleet_records(self, info, **kwargs):
+        return self.player_fleet_record.all()
 
     def resolve_fleet_relative_frequency(self, info, **kwargs):
         return fleet_relative_freq(self).to_dict()['FREQ']
