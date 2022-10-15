@@ -14,12 +14,8 @@ from ogame.statistics import (weekday_relative_freq, hour_relative_freq,
 from ogame.auth import access_required
 
 
-class UserType(DjangoObjectType):
-    """
-    Modelo de usuário padrão do django
-    """ 
-    class Meta:
-        model = get_user_model()
+class UserType(graphene.ObjectType):
+    username = graphene.String()
 
 
 class PlanetType(graphene.ObjectType):
