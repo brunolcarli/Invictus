@@ -88,7 +88,8 @@ def hour_relative_freq(scores, period):
 def fleet_relative_freq(player):
     ship2int, int2ship = fleet_mapping()
     attack_instance = player.combat_report_attacker.all()
-    defense_instance  = player.combat_report_defender.all()
+    defense_instance = player.combat_report_defender.all()
+    fleet_records = player.player_fleet_record.all()
 
     fleet = []
     for report in attack_instance:
@@ -112,6 +113,14 @@ def fleet_relative_freq(player):
                     except KeyError:
                         continue
                 break
+
+    for record in fleet_records:
+        data = CompressedDict.decompress_bytes(record.fleet)
+        for ship in data.keys():
+            try:
+                fleet.append(ship2int[ship])
+            except KeyError:
+                continue
 
     counts = Counter(fleet)
     for i in int2ship.keys():
