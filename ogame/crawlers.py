@@ -212,6 +212,17 @@ class OgameStatsCrawler:
                     print(f'CrawlingError: Failed updating alliance {alliance.name} with error: {str(err)}')
                     continue
 
+            # Update deleted players status
+            for player in Player.objects.all():
+                if player.status == 'deleted':
+                    continue
+                try:
+                    universe.get_player_data(player.name)
+                except IndexError:
+                    # Player was deleted
+                    player.status = 'deleted'
+                    player.save()
+
             sleep(3600*2)
 
 
