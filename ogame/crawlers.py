@@ -218,7 +218,7 @@ class OgameStatsCrawler:
                     continue
                 try:
                     universe.get_player_data(player.name)
-                except IndexError:
+                except (IndexError, ogame_stats.utils.xmltodict.expat.ExpatError):
                     # Player was deleted
                     player.status = 'del'
                     player.save()
