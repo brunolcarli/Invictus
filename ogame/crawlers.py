@@ -214,13 +214,13 @@ class OgameStatsCrawler:
 
             # Update deleted players status
             for player in Player.objects.all():
-                if player.status == 'deleted':
+                if player.status == 'del':
                     continue
                 try:
                     universe.get_player_data(player.name)
                 except IndexError:
                     # Player was deleted
-                    player.status = 'deleted'
+                    player.status = 'del'
                     player.save()
 
             sleep(3600*2)
