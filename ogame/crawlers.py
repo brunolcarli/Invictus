@@ -223,7 +223,7 @@ class OgameStatsCrawler:
                     player.status = 'del'
                     player.save()
                 except ogame_stats.utils.xmltodict.expat.ExpatError:
-                    # therd part lib faulure
+                    # third part lib faulure
                     continue
 
             sleep(3600*2)
