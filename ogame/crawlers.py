@@ -218,10 +218,13 @@ class OgameStatsCrawler:
                     continue
                 try:
                     universe.get_player_data(player.name)
-                except (IndexError, ogame_stats.utils.xmltodict.expat.ExpatError):
+                except IndexError:
                     # Player was deleted
                     player.status = 'del'
                     player.save()
+                except ogame_stats.utils.xmltodict.expat.ExpatError:
+                    # therd part lib faulure
+                    continue
 
             sleep(3600*2)
 
