@@ -16,10 +16,11 @@ Including another URLconf
 from django.urls import path
 from django.views.decorators.csrf import csrf_exempt
 from graphene_django.views import GraphQLView
-from ogame.views import api_root
+from ogame.views import api_root, wiki
 
 
 urlpatterns = [
     path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True))),
-    path('', api_root)
+    path('', api_root),
+    path('wiki/', wiki)
 ]
