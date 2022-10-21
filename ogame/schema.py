@@ -471,7 +471,7 @@ class Query(graphene.ObjectType):
                 datetime__isnull=False
             )
 
-        return players
+        return players.order_by('rank')
 
     alliances = graphene.List(
         AllianceType,
