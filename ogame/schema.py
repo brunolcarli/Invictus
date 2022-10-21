@@ -460,17 +460,20 @@ class Query(graphene.ObjectType):
 
     def resolve_players(self, info, **kwargs):
         dt_start = kwargs.pop('datetime__gte', None)
-        kwargs['score__datetime__isnull'] = False
         players = Player.objects.filter(**kwargs)
 
         if dt_start is None:
             return players.order_by('rank')
 
+        blacklist = []
         for player in players:
             player.scores = player.score_set.filter(
                 datetime__gte=dt_start.astimezone(pytz.timezone('UTC')),
                 datetime__isnull=False
             )
+            if not player.scores.exists():
+                blacklist.append(player.name)
+        players = players.exclude(name__in=blacklist)
 
         return players.order_by('rank')
 
