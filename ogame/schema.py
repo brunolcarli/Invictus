@@ -460,6 +460,7 @@ class Query(graphene.ObjectType):
 
     def resolve_players(self, info, **kwargs):
         dt_start = kwargs.pop('datetime__gte', None)
+        kwargs['score__datetime__isnull'] = False
         players = Player.objects.filter(**kwargs)
 
         if dt_start is None:
