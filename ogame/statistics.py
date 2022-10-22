@@ -91,49 +91,62 @@ def fleet_relative_freq(player):
     defense_instance = player.combat_report_defender.all()
     fleet_records = player.player_fleet_record.all()
 
-    fleet = []
+    fleet = {}
     for report in attack_instance:
         data = CompressedDict.decompress_bytes(report.attackers)
         for attacker in data:
             if player.name in attacker:
-                for ship in data[attacker]['ships']:
+                for ship, number in data[attacker]['ships'].items():
                     try:
-                        fleet.append(ship2int[ship])
+                        ship_key = ship2int[ship]
                     except KeyError:
                         continue
+                    if ship_key not in fleet:
+                        fleet[ship_key] = number
+                    else:
+                        fleet[ship_key] += number
                 break
 
     for report in defense_instance:
         data = CompressedDict.decompress_bytes(report.defenders)
         for defender in data:
             if player.name in defender:
-                for ship in data[defender]['ships']:
+                for ship, number in data[defender]['ships'].items():
                     try:
-                        fleet.append(ship2int[ship])
+                        ship_key = ship2int[ship]
                     except KeyError:
                         continue
+                    if ship_key not in fleet:
+                        fleet[ship_key] = number
+                    else:
+                        fleet[ship_key] += number
                 break
 
     for record in fleet_records:
         data = CompressedDict.decompress_bytes(record.fleet)
-        for ship in data.keys():
+        for ship, number in data.items():
             try:
-                fleet.append(ship2int[ship])
+                ship_key = ship2int[ship]
             except KeyError:
                 continue
+            if ship_key not in fleet:
+                fleet[ship_key] = number
+            else:
+                fleet[ship_key] += number
 
-    counts = Counter(fleet)
+    # Fill non existent ships with zero percentage
     for i in int2ship.keys():
-        if i not in counts:
-            counts[i] = 0
-
-    # avoid zero division error
-    if not fleet:
-        fleet.append(1)
+        if i not in fleet:
+            fleet[i] = 0
 
     data = []
-    for int_ship, usage in counts.items():
-        data.append([int2ship[int_ship], (usage/len(fleet)) * 100])
+    total_ships = sum(fleet.values())
+    # avoid zero division error
+    if total_ships == 0:
+        total_ships = 1
+
+    for int_ship, number in fleet.items():
+        data.append([int2ship[int_ship], (number/total_ships) * 100])
     df = pd.DataFrame(data, columns=['SHIP', 'FREQ']).round(2)
     return df.set_index('SHIP').sort_index()
 
@@ -141,43 +154,56 @@ def fleet_relative_freq(player):
 def universe_fleet_relative_freq(reports, fleet_records):
     ship2int, int2ship = fleet_mapping()
 
-    fleet = []
+    fleet = {}
     for report in reports:
         data = CompressedDict.decompress_bytes(report.attackers)
         for attacker in data:
-            for ship in data[attacker]['ships']:
+            for ship, number in data[attacker]['ships'].items():
                 try:
-                    fleet.append(ship2int[ship])
+                    ship_key = ship2int[ship]
                 except KeyError:
                     continue
+                if ship_key not in fleet:
+                    fleet[ship_key] = number
+                else:
+                    fleet[ship_key] += number
 
         data = CompressedDict.decompress_bytes(report.defenders)
         for defender in data:
-            for ship in data[defender]['ships']:
+            for ship, number in data[defender]['ships'].items():
                 try:
-                    fleet.append(ship2int[ship])
+                    ship_key = ship2int[ship]
                 except KeyError:
                     continue
+                if ship_key not in fleet:
+                    fleet[ship_key] = number
+                else:
+                    fleet[ship_key] += number
 
     for record in fleet_records:
         data = CompressedDict.decompress_bytes(record.fleet)
-        for ship in data.keys():
+        for ship, number in data.items():
             try:
-                fleet.append(ship2int[ship])
+                ship_key = ship2int[ship]
             except KeyError:
                 continue
+            if ship_key not in fleet:
+                fleet[ship_key] = number
+            else:
+                fleet[ship_key] += number
 
-    counts = Counter(fleet)
+    # Fill non existent ships with zero percentage
     for i in int2ship.keys():
-        if i not in counts:
-            counts[i] = 0
-
-    # avoid zero division error
-    if not fleet:
-        fleet.append(1)
+        if i not in fleet:
+            fleet[i] = 0
 
     data = []
-    for int_ship, usage in counts.items():
-        data.append([int2ship[int_ship], (usage/len(fleet)) * 100])
+    total_ships = sum(fleet.values())
+    # avoid zero division error
+    if total_ships == 0:
+        total_ships = 1
+
+    for int_ship, number in fleet.items():
+        data.append([int2ship[int_ship], (number/total_ships) * 100])
     df = pd.DataFrame(data, columns=['SHIP', 'FREQ']).round(2)
     return df.set_index('SHIP').sort_index()
